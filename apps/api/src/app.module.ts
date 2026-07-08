@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { StartupService } from './startup/startup.service';
 
 import { DatabaseModule } from './database/database.module';
@@ -35,7 +33,6 @@ import { UserWatchLaterModule } from './user-watch-later/user-watch-later.module
     UserHistoryModule,
     UserWatchLaterModule,
   ],
-  controllers: [AppController],
-  providers: [StartupService, AppService],
+  providers: [StartupService],
 })
 export class AppModule {}

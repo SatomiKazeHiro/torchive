@@ -23,11 +23,6 @@ export class DetailController {
     return this.detailService.create(createDetailDto);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.detailService.findAll();
-  // }
-
   @Get(':hash_id')
   findOne(@Param('hash_id') hash_id: string) {
     return this.detailService.findOne(hash_id);

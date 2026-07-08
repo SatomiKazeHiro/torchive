@@ -22,11 +22,6 @@ export class CategoryController {
     return this.categoryService.create(createCategoryDto);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.categoryService.findAll();
-  // }
-
   @Get(':hash_id')
   findOne(@Param('hash_id') hash_id: string) {
     return this.categoryService.findOne(hash_id);

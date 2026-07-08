@@ -22,11 +22,6 @@ export class WorkController {
     return this.workService.create(createWorkDto);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.workService.findAll();
-  // }
-
   @Get(':hash_id')
   findOne(@Param('hash_id') hash_id: string) {
     return this.workService.findOne(hash_id);
