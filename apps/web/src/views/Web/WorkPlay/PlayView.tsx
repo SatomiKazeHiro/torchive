@@ -1,5 +1,5 @@
-import { useEffect, lazy, Suspense } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, lazy, Suspense, useMemo } from "react";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { createUserHistory } from "@/api/web";
 import { useUser } from "@/contexts/useUser";
 import { transformEntities } from "@/mappers/work";
@@ -34,10 +34,18 @@ function PlayView() {
   }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user } = useUser();
 
-  // 从路由 state 获取初始文件路径
+  // 从路由 state 获取初始文件路径(向后兼容旧链接)
   const initialFilePath = (location.state as { filePath?: string })?.filePath;
+
+  // 首次进入时的 asset(URL ?asset= 或回退到 location.state)
+  // useMemo 空依赖,只在挂载时计算一次,避免后续 asset 切换反复写历史
+  const initialAsset = useMemo(() => {
+    return searchParams.get("asset") ?? initialFilePath ?? undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { work, categoryInfo, recommendedWorks, loading, error, domainName, refetch } =
     useWorkWithContext({ id, domain, category });
@@ -47,15 +55,15 @@ function PlayView() {
     ? { work, entities: transformEntities(work) }
     : null;
 
-  // 记录观看历史（已登录用户，静默失败）
+  // 记录观看历史（已登录用户，静默失败,仅首次进入时记录）
   useEffect(() => {
     if (!user || !id) return;
     createUserHistory({
       uid: user.uid,
       work_hash_id: id,
-      params: initialFilePath,
+      params: initialAsset,
     }).catch(() => {});
-  }, [user, id, initialFilePath]);
+  }, [user, id, initialAsset]);
 
   // 处理搜索
   const handleSearch = (query: string) => {

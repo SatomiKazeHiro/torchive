@@ -7,6 +7,7 @@ import { Button } from "@/components";
 import ArtPlayerVideo from "./ArtPlayerVideo";
 import VideoEpisodeList from "./VideoEpisodeList";
 import { generateVideoTabs } from "./videoTabs";
+import { useVideoPlayState } from "./useVideoPlayState";
 import BreadcrumbNav from "./BreadcrumbNav";
 import WorkInfo from "./WorkInfo";
 import MoreRecommendations from "./MoreRecommendations";
@@ -32,9 +33,8 @@ export default function VideoPlayTemplate({
   error,
   onRetry,
   recommendedWorks,
+  initialFilePath,
 }: MixturePlayTemplateProps) {
-  const [activeTab, setActiveTab] = useState<string>("");
-  const [currentVideoIndex, setCurrentVideoIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   // 解析实体数据
@@ -57,15 +57,20 @@ export default function VideoPlayTemplate({
     return files;
   }, [entities]);
 
-  // 获取当前 tab 的视频列表
-  const currentTabKey = activeTab || videoTabs[0]?.key || "";
+  // URL state: ?tab=&asset= 双向同步
+  const { currentTab, currentAsset, setTab, setAsset } = useVideoPlayState(
+    videoTabs,
+    initialFilePath,
+  );
+
+  // 当前 tab 的视频列表
   const currentTabVideos = useMemo(() => {
-    const tab = videoTabs.find((t) => t.key === currentTabKey);
+    const tab = videoTabs.find((t) => t.key === currentTab);
     return tab?.videos || [];
-  }, [videoTabs, currentTabKey]);
+  }, [videoTabs, currentTab]);
 
   // 当前播放的视频
-  const currentVideo = currentTabVideos[currentVideoIndex] || currentTabVideos[0];
+  const currentVideo = currentAsset ?? undefined;
 
   // 作品信息
   const work = transformedWorkData?.work;
@@ -76,14 +81,13 @@ export default function VideoPlayTemplate({
     : "";
 
   // 处理集数点击
-  const handleEpisodeClick = (index: number) => {
-    setCurrentVideoIndex(index);
+  const handleEpisodeClick = (asset: string) => {
+    setAsset(asset);
   };
 
   // 处理 Tab 切换
   const handleTabChange = (key: string) => {
-    setActiveTab(key);
-    setCurrentVideoIndex(0);
+    setTab(key);
   };
 
   // 处理重播
@@ -93,13 +97,19 @@ export default function VideoPlayTemplate({
 
   // 处理下一集
   const handleNextEpisode = () => {
-    if (currentVideoIndex < currentTabVideos.length - 1) {
-      setCurrentVideoIndex((prev) => prev + 1);
+    if (!currentAsset) return;
+    const idx = currentTabVideos.indexOf(currentAsset);
+    if (idx >= 0 && idx < currentTabVideos.length - 1) {
+      setAsset(currentTabVideos[idx + 1]);
     }
   };
 
   // 是否有下一个视频
-  const hasNextVideo = currentVideoIndex < currentTabVideos.length - 1;
+  const hasNextVideo = (() => {
+    if (!currentAsset) return false;
+    const idx = currentTabVideos.indexOf(currentAsset);
+    return idx >= 0 && idx < currentTabVideos.length - 1;
+  })();
 
   // 加载中状态
   if (loading) {
@@ -173,11 +183,11 @@ export default function VideoPlayTemplate({
         {/* Tabs 选集区域 */}
         <VideoEpisodeList
           entities={entities}
-          activeTab={activeTab}
-          currentVideoIndex={currentVideoIndex}
+          activeTab={currentTab ?? ""}
+          currentAsset={currentAsset}
           isPlaying={isPlaying}
           onTabChange={handleTabChange}
-          onVideoSelect={handleEpisodeClick}
+          onAssetSelect={handleEpisodeClick}
         />
 
         {/* 更多推荐 */}
