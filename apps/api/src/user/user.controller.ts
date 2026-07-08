@@ -21,7 +21,10 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { FindByPageDto } from '@/common/typeorm/find.dto';
 
-const UPLOAD_DIR = path.resolve(__dirname, '..', '..', 'upload-files');
+// 与 main.ts 中 /uploads 静态服务共享 UPLOAD_DIR_PATH 环境变量
+const UPLOAD_DIR =
+  process.env.UPLOAD_DIR_PATH ??
+  path.resolve(__dirname, '..', '..', 'upload-files');
 
 @Controller('users')
 export class UserController {
@@ -98,23 +101,20 @@ export class UserController {
 
     const ext = path.extname(file.originalname) || '.jpg';
     const relativePath = `uploads/avatar.${uid}${ext}`;
-    const fileUrl = `file:${relativePath}`;
 
     // 获取旧头像，用于后续删除
     const oldUser = await this.userService.findOneRaw(uid);
     const oldAvatar = oldUser?.avatar || '';
 
-    // 更新用户头像
-    await this.userService.update(uid, { avatar: fileUrl });
+    // 更新用户头像（存相对路径，前端 getAvatarUrl 会拼上 /ts-api 前缀）
+    await this.userService.update(uid, { avatar: relativePath });
 
-    // 删除旧头像文件
-    if (oldAvatar.startsWith('file:')) {
-      const oldPath = path.resolve(
-        __dirname,
-        '..',
-        '..',
-        oldAvatar.replace('file:', ''),
-      );
+    // 删除旧头像文件 — 兼容旧 `file:` 前缀与新纯路径两种格式
+    const oldRelative = oldAvatar.startsWith('file:')
+      ? oldAvatar.slice('file:'.length)
+      : oldAvatar;
+    if (oldRelative.startsWith('uploads/')) {
+      const oldPath = path.resolve(UPLOAD_DIR, oldRelative);
       try {
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
@@ -125,7 +125,7 @@ export class UserController {
     }
 
     return {
-      avatar: fileUrl,
+      avatar: relativePath,
       path: relativePath,
     };
   }

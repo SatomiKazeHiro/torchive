@@ -33,8 +33,10 @@ async function bootstrap() {
     app.use('/resources', express.static(path.resolve(workDir)));
   }
 
-  // 上传文件静态服务
-  const uploadDir = path.resolve(__dirname, '..', 'upload-files');
+  // 上传文件静态服务（与 user.controller.ts 共享 UPLOAD_DIR_PATH）
+  const uploadDir =
+    process.env.UPLOAD_DIR_PATH ??
+    path.resolve(__dirname, '..', 'upload-files');
   app.use('/uploads', express.static(uploadDir));
 
   // 全局响应拦截器（统一成功结构）
