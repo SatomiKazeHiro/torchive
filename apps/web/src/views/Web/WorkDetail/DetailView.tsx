@@ -1,11 +1,18 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { BiFile, BiFolder } from "react-icons/bi";
 import { navigateToWorkDetailByWork } from "@/utils/navigation";
-import { getWork, getLatestWork, getCategories, getDomains } from "@/api/web";
 import { mapWorkToBrief } from "@/mappers/work";
+import { useWorkWithContext } from "@/hooks/useWorkWithContext";
 import { Card, Button, Poster } from "@/components";
-import { MixtureTemplate, MusicTemplate, EbookTemplate, VideoTemplate, MangaTemplate, AlbumTemplate } from "./templates";
+import {
+  MixtureTemplate,
+  MusicTemplate,
+  EbookTemplate,
+  VideoTemplate,
+  MangaTemplate,
+  AlbumTemplate,
+} from "./templates";
 import { DEFAULT_WORK_PAGE_TEMPLATE } from "./types";
 
 function WorkDetailView() {
@@ -16,59 +23,11 @@ function WorkDetailView() {
   }>();
   const navigate = useNavigate();
 
-  const [work, setWork] = useState<Work | null>(null);
-  const [categoryInfo, setCategoryInfo] = useState<Category | null>(null);
-  const [domains, setDomains] = useState<Domain[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [recommendedWorks, setRecommendedWorks] = useState<Work[]>([]);
-
-  // 域名显示名称 - 从服务器获取的 domains 中查找
-  const domainName = useMemo(() => {
-    if (!domain || domains.length === 0) return domain || "";
-    const matchedDomain = domains.find((d) => d.domain === domain);
-    return matchedDomain?.name || domain;
-  }, [domain, domains]);
-
-  // 获取作品数据、分类信息和域名列表
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!id || !domain || !category) return;
-      setLoading(true);
-      setError(null);
-      try {
-        // 并行获取：作品详情、分类列表、域名列表
-        const [workRes, categoriesRes, domainsRes] = await Promise.all([
-          getWork(id),
-          getCategories(domain),
-          getDomains(),
-        ]);
-
-        setWork(workRes.data);
-        setDomains(domainsRes.data);
-
-        // 查找匹配的分类
-        const matchedCategory = categoriesRes.data.find((cat) => cat.category === category);
-        if (matchedCategory) {
-          setCategoryInfo(matchedCategory);
-        }
-      } catch (err) {
-        setError("获取数据失败，请稍后重试");
-        console.error("Failed to fetch work detail:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [id, domain, category]);
-
-  // 获取推荐作品
-  useEffect(() => {
-    if (!domain) return;
-    getLatestWork(domain, category).then((res) => {
-      setRecommendedWorks(res.data.filter((w) => w.hash_id !== id).slice(0, 6));
-    });
-  }, [domain, category, id]);
+  const { work, categoryInfo, recommendedWorks, loading, error, domainName } = useWorkWithContext({
+    id,
+    domain,
+    category,
+  });
 
   // 确定使用的模板
   const workPageTemplate: WorkPageTemplate = useMemo(() => {
@@ -100,7 +59,7 @@ function WorkDetailView() {
       case "manga":
         return <MangaTemplate {...templateProps} />;
       case "album":
-        return <AlbumTemplate {...templateProps} />
+        return <AlbumTemplate {...templateProps} />;
       case "mixture":
       default:
         return <MixtureTemplate {...templateProps} />;

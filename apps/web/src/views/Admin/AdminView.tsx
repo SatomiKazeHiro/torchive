@@ -1,28 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { BiGridAlt, BiLayer, BiCategory, BiCollection } from "react-icons/bi";
-
-const ADMIN_NAV = [
-  {
-    path: "/admin/dashboard",
-    name: "仪表板",
-    icon: BiGridAlt,
-  },
-  {
-    path: "/admin/domain",
-    name: "主题管理",
-    icon: BiLayer,
-  },
-  {
-    path: "/admin/category",
-    name: "分类管理",
-    icon: BiCategory,
-  },
-  {
-    path: "/admin/media",
-    name: "媒体管理",
-    icon: BiCollection,
-  },
-];
+import { ADMIN_NAV } from "./adminNav";
 
 function AdminView() {
   const location = useLocation();
@@ -30,34 +7,34 @@ function AdminView() {
   return (
     <div
       id="admin-page"
-      className="min-h-screen bg-white text-rich-black dark:bg-zinc-950 dark:text-zinc-100"
+      className="text-rich-black min-h-screen bg-white dark:bg-zinc-950 dark:text-zinc-100"
     >
       {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-50 border-b border-subtle-ash bg-white/95 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900/95">
+      <header className="border-subtle-ash sticky top-0 z-50 border-b bg-white/95 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900/95">
         <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="flex items-center gap-3 text-lg font-semibold tracking-[-0.025em] text-deep-black dark:text-zinc-100"
+              className="text-deep-black flex items-center gap-3 text-lg font-semibold tracking-[-0.025em] dark:text-zinc-100"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-deep-black text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+              <span className="bg-deep-black flex h-8 w-8 items-center justify-center rounded-[10px] text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
                 T
               </span>
               Torchive
             </Link>
-            <span className="hidden h-5 w-px bg-subtle-ash sm:block dark:bg-zinc-700" />
-            <span className="hidden text-sm font-medium text-midtone-gray sm:inline dark:text-zinc-400">
+            <span className="bg-subtle-ash hidden h-5 w-px sm:block dark:bg-zinc-700" />
+            <span className="text-midtone-gray hidden text-sm font-medium sm:inline dark:text-zinc-400">
               管理后台
             </span>
           </div>
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="rounded-[9999px] px-3 py-2 text-sm font-medium text-rich-black transition-colors hover:bg-ghost-gray dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              className="text-rich-black hover:bg-ghost-gray rounded-[9999px] px-3 py-2 text-sm font-medium transition-colors dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             >
               返回前台
             </Link>
-            <div className="flex h-8 w-8 items-center justify-center rounded-[9999px] bg-ghost-gray text-sm font-semibold text-deep-black dark:bg-zinc-800 dark:text-zinc-100">
+            <div className="bg-ghost-gray text-deep-black flex h-8 w-8 items-center justify-center rounded-[9999px] text-sm font-semibold dark:bg-zinc-800 dark:text-zinc-100">
               A
             </div>
           </div>
@@ -66,12 +43,12 @@ function AdminView() {
 
       <div className="flex h-[calc(100vh-3.5rem-1px)]">
         {/* 侧边栏 */}
-        <aside className="admin-scrollbar w-56 shrink-0 overflow-y-auto border-r border-subtle-ash bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <aside className="admin-scrollbar border-subtle-ash w-56 shrink-0 overflow-y-auto border-r bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <nav className="space-y-1 p-3">
             {ADMIN_NAV.map((item) => {
-              const isActive =
-                location.pathname === item.path ||
-                (item.path !== "/admin/dashboard" && location.pathname.startsWith(item.path));
+              const isActive = item.exact
+                ? location.pathname === item.path
+                : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
               return (
                 <Link
                   key={item.path}

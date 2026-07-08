@@ -14,17 +14,15 @@ function DomainOverviewView() {
     category?: string;
   }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedDomain, setSelectedDomain] = useState(
-    pathDomain || searchParams.get("domain") || "all",
-  );
-  const [selectedCategory, setSelectedCategory] = useState(
-    pathCategory || searchParams.get("category") || "all",
-  );
+
+  // URL 是唯一真源：路径参数优先，搜索参数兜底，未指定时为 "all"
+  const selectedDomain = pathDomain || searchParams.get("domain") || "all";
+  const selectedCategory = pathCategory || searchParams.get("category") || "all";
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
   const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -91,14 +89,10 @@ function DomainOverviewView() {
   }, [selectedDomain]);
 
   useEffect(() => {
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    setCurrentPage(page);
-    fetchWorks(page, selectedDomain, selectedCategory);
-  }, [searchParams, selectedDomain, selectedCategory, fetchWorks]);
+    fetchWorks(currentPage, selectedDomain, selectedCategory);
+  }, [currentPage, selectedDomain, selectedCategory, fetchWorks]);
 
   const handleDomainChange = (domainId: string) => {
-    setSelectedDomain(domainId);
-    setSelectedCategory("all");
     const params: Record<string, string> = { page: "1" };
     if (domainId !== "all") {
       params.domain = domainId;
@@ -107,7 +101,6 @@ function DomainOverviewView() {
   };
 
   const handleCategoryChange = (categoryId: string) => {
-    setSelectedCategory(categoryId);
     const params: Record<string, string> = { page: "1" };
     if (selectedDomain !== "all") {
       params.domain = selectedDomain;
