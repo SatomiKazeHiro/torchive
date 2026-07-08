@@ -18,7 +18,11 @@ export default defineConfig({
         target: "http://localhost:2333",
         ws: false,
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/ts-api/, ""),
+        // API 路由后端通过 setGlobalPrefix('ts-api') 整体挂在前缀下，原样转发；
+        // 静态资源（/uploads、/resources）是 main.ts 里的 express middleware，
+        // 直接挂在根路径，需要 strip 前缀。
+        rewrite: (path) =>
+          /^\/ts-api\/(uploads|resources)(\/|$)/.test(path) ? path.replace(/^\/ts-api/, "") : path,
       },
 
       "/api-netease": {
