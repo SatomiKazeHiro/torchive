@@ -3,15 +3,14 @@ import { webHttp, TsResponse, TsItemResponse } from "./shared";
 export function createUserHistory(data: { uid: string; work_hash_id: string; params?: string }) {
   return webHttp.post<TsItemResponse<UserHistory>>(
     "/user-histories",
-    data as Record<string, unknown>
+    data as Record<string, unknown>,
   );
 }
 
 export function getUserHistories(uid: string) {
   return webHttp.get<TsResponse<UserHistory>>("/user-histories", {
     uid,
-    page: 1,
-    limit: 1000,
+    limit: 100,
   } as Record<string, unknown>);
 }
 

@@ -3,15 +3,14 @@ import { webHttp, TsResponse, TsItemResponse } from "./shared";
 export function createUserFavorite(data: { uid: string; work_hash_id: string }) {
   return webHttp.post<TsItemResponse<UserFavorite>>(
     "/user-favorites",
-    data as Record<string, unknown>
+    data as Record<string, unknown>,
   );
 }
 
 export function getUserFavorites(uid: string) {
   return webHttp.get<TsResponse<UserFavorite>>("/user-favorites", {
     uid,
-    page: 1,
-    limit: 1000,
+    limit: 100,
   } as Record<string, unknown>);
 }
 

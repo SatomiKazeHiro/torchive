@@ -10,6 +10,10 @@ import * as path from 'path';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // 全局 API 前缀（默认与 Vite 代理前缀一致，可通过 API_PREFIX 覆盖）
+  const apiPrefix = process.env.API_PREFIX ?? 'ts-api';
+  app.setGlobalPrefix(apiPrefix);
+
   // 解析 JSON body
   app.use(express.json());
   // 解析 application/x-www-form-urlencoded
@@ -22,11 +26,10 @@ async function bootstrap() {
       transform: true, // 自动类型转换，例如 "1" -> number
     }),
   );
-  // 静态资源：从 .env 获取资源目录
+  // 静态资源：从 .env 获取资源目录（不走全局前缀，单独挂载）
   const configService = app.get(ConfigService);
   const workDir = configService.get<string>('WORK_DIR_PATH');
   if (workDir) {
-    // 挂载静态资源路由
     app.use('/resources', express.static(path.resolve(workDir)));
   }
 
@@ -39,6 +42,6 @@ async function bootstrap() {
   // 全局异常过滤器（统一失败结构）
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 2333);
 }
 void bootstrap();

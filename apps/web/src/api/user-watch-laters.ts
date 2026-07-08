@@ -3,15 +3,14 @@ import { webHttp, TsResponse, TsItemResponse } from "./shared";
 export function createUserWatchLater(data: { uid: string; work_hash_id: string }) {
   return webHttp.post<TsItemResponse<UserWatchLater>>(
     "/user-watch-laters",
-    data as Record<string, unknown>
+    data as Record<string, unknown>,
   );
 }
 
 export function getUserWatchLaters(uid: string) {
   return webHttp.get<TsResponse<UserWatchLater>>("/user-watch-laters", {
     uid,
-    page: 1,
-    limit: 1000,
+    limit: 100,
   } as Record<string, unknown>);
 }
 

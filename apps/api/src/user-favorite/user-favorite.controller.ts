@@ -22,8 +22,21 @@ export class UserFavoriteController {
   }
 
   @Get()
-  findAll(@Query('uid') uid?: string) {
-    return this.favoriteService.findByPage({ uid, page: 1, limit: 1000 });
+  findAll(
+    @Query('uid') uid?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const safePage = Math.max(1, parseInt(page ?? '1', 10) || 1);
+    const safeLimit = Math.min(
+      100,
+      Math.max(1, parseInt(limit ?? '20', 10) || 20),
+    );
+    return this.favoriteService.findByPage({
+      uid,
+      page: safePage,
+      limit: safeLimit,
+    });
   }
 
   @Post('/page')
