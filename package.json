@@ -1,0 +1,46 @@
+{
+  "name": "torchive-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Torchive monorepo: React 19 frontend (apps/web) + NestJS 11 backend (apps/api) + shared TypeScript types (packages/shared).",
+  "scripts": {
+    "dev": "concurrently -n web,api -c blue,green \"pnpm dev:web\" \"pnpm dev:api\"",
+    "dev:web": "pnpm --filter @torchive/web dev",
+    "dev:api": "pnpm --filter @torchive/api start:dev",
+    "build": "pnpm -r --filter @torchive/web --filter @torchive/api build",
+    "build:web": "pnpm --filter @torchive/web build",
+    "build:api": "pnpm --filter @torchive/api build",
+    "lint": "pnpm -r --filter @torchive/web --filter @torchive/api lint",
+    "lint:web": "pnpm --filter @torchive/web lint",
+    "lint:api": "pnpm --filter @torchive/api lint",
+    "typecheck": "pnpm -r --filter @torchive/web --filter @torchive/api --filter @torchive/shared typecheck",
+    "typecheck:web": "pnpm --filter @torchive/web exec tsc -b",
+    "typecheck:shared": "pnpm --filter @torchive/shared typecheck",
+    "test:web": "pnpm --filter @torchive/web test",
+    "test:api": "pnpm --filter @torchive/api test",
+    "test": "pnpm test:web && pnpm test:api",
+    "clean": "pnpm -r exec rm -rf dist",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx,js,jsx}": [
+      "pnpm --filter @torchive/web exec eslint --fix --max-warnings 0",
+      "pnpm --filter @torchive/web exec prettier --write"
+    ],
+    "apps/api/**/*.{ts,tsx,js,jsx}": [
+      "pnpm --filter @torchive/api exec eslint --fix --max-warnings 0",
+      "pnpm --filter @torchive/api exec prettier --write"
+    ],
+    "apps/web/**/*.{css,json,md}": "pnpm --filter @torchive/web exec prettier --write",
+    "apps/api/**/*.{json,md}": "pnpm --filter @torchive/api exec prettier --write"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Torchive</title>
+    <script>
+      // 首屏防闪：在 CSS 加载前根据 localStorage / 系统偏好同步给 <html> 加上 dark 类
+      (function () {
+        try {
+          var saved = localStorage.getItem("torchive_theme");
+          var mode = saved === "light" || saved === "dark" || saved === "system" ? saved : "system";
+          var dark = mode === "dark" || (mode === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (_) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

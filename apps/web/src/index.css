@@ -1,0 +1,157 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* 主题策略：从 media 切换到 class，由 ThemeContext 控制 <html> 上的 .dark 类 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+ * 主题令牌 —— 通过 CSS 变量驱动浅/深色切换
+ * 设计系统采用 achromatic（无饱和色）色板：
+ *   - 浅色：白底 + 深灰文字
+ *   - 深色：zinc-950/zinc-900 底 + zinc-100 文字
+ * 组件层通过 bg-page / text-primary 等语义化工具类引用，
+ * 不再需要写 dark: 副本。
+ * ============================================================ */
+:root {
+  /* Surfaces (背景层) */
+  --surface-page: #fafafa;        /* 页面底色，浅色 = zinc-50 */
+  --surface-card: #ffffff;        /* 卡片底色，浅色 = canvas-white */
+  --surface-subtle: #f4f4f5;      /* 二级背景 / badge / hover 底，浅色 = zinc-100 */
+
+  /* Foreground (前景：文字 + 图标) */
+  --fg-primary: #18181b;          /* rich-black（主文本） */
+  --fg-secondary: #3f3f46;        /* 次级文本，浅色 = zinc-700 */
+  --fg-muted: #71717a;            /* muted 文本，浅色 = zinc-500 */
+  --fg-faint: #a1a1aa;            /* 占位 / 弱化文本，浅色 = zinc-400 */
+
+  /* Edge (描边) */
+  --edge: #e4e4e7;                /* 默认描边，浅色 = zinc-200 */
+  --edge-subtle: #f4f4f5;         /* 弱描边，浅色 = zinc-100 */
+
+  /* Accent (CTA 主操作) */
+  --accent: #18181b;              /* 深色按钮底，浅色 = rich-black */
+  --on-accent: #ffffff;           /* 深色按钮文字，浅色 = canvas-white */
+}
+
+html.dark {
+  --surface-page: #09090b;        /* zinc-950 */
+  --surface-card: #18181b;        /* zinc-900 */
+  --surface-subtle: #27272a;      /* zinc-800 */
+
+  --fg-primary: #f4f4f5;          /* zinc-100 */
+  --fg-secondary: #d4d4d8;        /* zinc-300 */
+  --fg-muted: #a1a1aa;            /* zinc-400 */
+  --fg-faint: #71717a;            /* zinc-500 */
+
+  --edge: #3f3f46;                /* zinc-700 */
+  --edge-subtle: #27272a;         /* zinc-800 */
+
+  --accent: #f4f4f5;              /* zinc-100，深色模式下主操作反相为白底 */
+  --on-accent: #18181b;           /* zinc-900 */
+}
+
+/* 把 CSS 变量暴露为 Tailwind 工具类（@theme inline 保留 var() 引用以便运行时解析） */
+@theme inline {
+  --color-page: var(--surface-page);
+  --color-card: var(--surface-card);
+  --color-subtle: var(--surface-subtle);
+  --color-primary: var(--fg-primary);
+  --color-secondary: var(--fg-secondary);
+  --color-muted: var(--fg-muted);
+  --color-faint: var(--fg-faint);
+  --color-edge: var(--edge);
+  --color-edge-subtle: var(--edge-subtle);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+}
+
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("./assets/fonts/HarmonyOS_Sans_SC_Regular.woff2") format("woff2");
+  font-weight: 400; /* Regular */
+  font-style: normal;
+  font-display: swap; /* 控制字体加载策略 */
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "HarmonyOS Sans SC", sans-serif;
+  }
+
+  html,
+  body {
+    background-color: var(--surface-page);
+  }
+
+  #root {
+    position: relative;
+  }
+
+  /* 全局键盘焦点环（设计令牌：无饱和色，仅深黑色描边） */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+/* 隐藏滚动条工具类 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 细滚动条（永久可见轨道，修复 Chromium overlay 模式在小面板中不易察觉的体验问题）
+   注意：项目未安装 tailwind-scrollbar 插件，原生 .scrollbar-thin 无效，故在此统一定义。 */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(120 120 120 / 0.4) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(120 120 120 / 0.4);
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgb(120 120 120 / 0.65);
+}
+
+/* 浅色滚动条：用于深色背景 / 白色文字场景（如 Music 播放页） */
+.scrollbar-light {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+}
+
+.scrollbar-light::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-light::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-light::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.2);
+  border-radius: 9999px;
+}
+
+.scrollbar-light::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.35);
+}

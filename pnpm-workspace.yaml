@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  core-js: true
+  "es5-ext": false
+  esbuild: false
+  better-sqlite3: true
