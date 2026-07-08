@@ -64,6 +64,8 @@ export interface EbookPlayTemplateProps {
   error: string | null;
   onRetry: () => void;
   recommendedWorks: Work[];
+  /** 初始文件路径(从 PlayView 解析 URL ?asset= 后传入) */
+  initialFilePath?: string;
 }
 
 // 设置面板 Props

@@ -5,6 +5,7 @@ import { BiArrowToLeft, BiBook, BiFolder, BiGridAlt, BiListUl } from "react-icon
 import { Empty } from "@/components";
 import { transformEntities } from "@/mappers/work";
 import { sortFiles } from "@/utils/sort";
+import { shortHash } from "@/utils/shortHash";
 import { filterImageFiles } from "@/utils/fileHelper";
 
 import WorkDetailShell from "../components/WorkDetailShell";
@@ -88,12 +89,7 @@ function LazyImage({ src, alt, className }: { src: string; alt: string; classNam
   );
 }
 
-export default function AlbumTemplate({
-  work,
-  domain,
-  category,
-  domainName,
-}: WorkTemplateProps) {
+export default function AlbumTemplate({ work, domain, category, domainName }: WorkTemplateProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -113,7 +109,8 @@ export default function AlbumTemplate({
   }, [chapterUnits, selectedUnit]);
 
   const handleRead = (filePath?: string) => {
-    navigate(`/${domain}/${category}/${id}/play`, { state: { filePath } });
+    const assetParam = filePath ? `?asset=${shortHash(filePath, 8)}` : "";
+    navigate(`/${domain}/${category}/${id}/play${assetParam}`);
   };
 
   const backToList = () => {
@@ -159,7 +156,7 @@ export default function AlbumTemplate({
           bordered
           size="lg"
           iconVariant="flat"
-          icon={<BiFolder className="h-12 w-12 text-faint" strokeWidth={1} />}
+          icon={<BiFolder className="text-faint h-12 w-12" strokeWidth={1} />}
           description="暂无数据"
         />
       )}
@@ -241,9 +238,7 @@ function renderChapterGrid({
               <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 {unit.name}
               </span>
-              <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                {unit.files.length}P
-              </span>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">{unit.files.length}P</span>
             </button>
           ))}
         </div>
@@ -292,7 +287,11 @@ function renderImageList({
           const pageNum = idx + 1;
           const fileName = file.split("/").pop() || file;
           return (
-            <div key={`${file}-${idx}`} className="group cursor-pointer" onClick={() => onSelect(file)}>
+            <div
+              key={`${file}-${idx}`}
+              className="group cursor-pointer"
+              onClick={() => onSelect(file)}
+            >
               <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
                 <LazyImage src={file} alt={`第${pageNum}页`} className="h-full w-full" />
                 <div className="absolute right-1.5 bottom-1.5 rounded bg-black/60 px-1.5 py-0.5 text-xs text-white">
@@ -317,7 +316,9 @@ function renderImageList({
         </div>
       )}
       {!hasMore && files.length > LOAD_MORE_COUNT && (
-        <div className="mt-8 mb-4 text-center text-sm text-zinc-400">已加载全部 {files.length} 页</div>
+        <div className="mt-8 mb-4 text-center text-sm text-zinc-400">
+          已加载全部 {files.length} 页
+        </div>
       )}
     </div>
   );

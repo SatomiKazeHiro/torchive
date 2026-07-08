@@ -11,13 +11,18 @@ import { DEFAULT_READER_SETTINGS } from "./constants";
 import {
   getFileExtension,
   generateChapterUnits,
-  parseInitialFilePath,
   findChapterIndexByFile,
   findFileIndexInChapter,
 } from "./utils";
 import { useReadingProgress } from "./hooks/useReadingProgress";
 
-import type { EbookPlayTemplateProps, ChapterUnit, ThemeMode, FontSize, ReadingMode } from "./types";
+import type {
+  EbookPlayTemplateProps,
+  ChapterUnit,
+  ThemeMode,
+  FontSize,
+  ReadingMode,
+} from "./types";
 import type { MobileTxtReaderRef } from "@/features/common/MobileTxtReader";
 
 // 主题转换：Ebook (paper/parchment/dark/light) -> PdfReader (light/dark)
@@ -53,6 +58,7 @@ export default function EbookPlayTemplate({
   category,
   loading,
   error,
+  initialFilePath,
 }: EbookPlayTemplateProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -107,9 +113,6 @@ export default function EbookPlayTemplate({
     const { work, entities } = transformedWorkData;
     const units = generateChapterUnits(entities);
 
-    // 从 URL state 获取初始文件路径
-    const initialFilePath = parseInitialFilePath(location.state);
-
     // 尝试恢复阅读进度
     let chapterIndex = state.currentChapterIndex;
     let fileIndex = state.currentFileIndex;
@@ -123,8 +126,8 @@ export default function EbookPlayTemplate({
           chapterIndex = savedProgress.chapterIndex;
           fileIndex = savedProgress.fileIndex;
           // 恢复进度到状态
-          setState({ 
-            currentFileIndex: fileIndex, 
+          setState({
+            currentFileIndex: fileIndex,
             currentChapterIndex: chapterIndex,
             progress: savedProgress.progress,
           });
@@ -157,11 +160,22 @@ export default function EbookPlayTemplate({
       isFirstChapter: state.currentChapterIndex <= 0,
       isLastChapter: state.currentChapterIndex >= units.length - 1,
     };
-  }, [transformedWorkData, location.state, state.currentChapterIndex, state.currentFileIndex, setState, getProgress]);
+  }, [
+    transformedWorkData,
+    initialFilePath,
+    state.currentChapterIndex,
+    state.currentFileIndex,
+    setState,
+    getProgress,
+  ]);
 
   // 当前文件信息
   const currentFileUrl = useMemo(() => {
-    if (!currentChapter || state.currentFileIndex < 0 || state.currentFileIndex >= currentChapter.files.length) {
+    if (
+      !currentChapter ||
+      state.currentFileIndex < 0 ||
+      state.currentFileIndex >= currentChapter.files.length
+    ) {
       return null;
     }
     return currentChapter.files[state.currentFileIndex];
@@ -187,44 +201,50 @@ export default function EbookPlayTemplate({
     }
   }, [workId, state.currentChapterIndex, state.currentFileIndex, state.progress, saveProgress]);
 
-  const switchChapter = useCallback((direction: "prev" | "next") => {
-    const isFirst = state.currentChapterIndex <= 0;
-    const isLast = state.currentChapterIndex >= chapterUnits.length - 1;
+  const switchChapter = useCallback(
+    (direction: "prev" | "next") => {
+      const isFirst = state.currentChapterIndex <= 0;
+      const isLast = state.currentChapterIndex >= chapterUnits.length - 1;
 
-    if (direction === "prev" && isFirst) return;
-    if (direction === "next" && isLast) return;
+      if (direction === "prev" && isFirst) return;
+      if (direction === "next" && isLast) return;
 
-    // 保存当前进度
-    saveCurrentProgress();
+      // 保存当前进度
+      saveCurrentProgress();
 
-    const delta = direction === "prev" ? -1 : 1;
-    setState({
-      currentChapterIndex: state.currentChapterIndex + delta,
-      currentFileIndex: 0,
-      progress: 0,
-    });
-  }, [state.currentChapterIndex, chapterUnits.length, setState, saveCurrentProgress]);
+      const delta = direction === "prev" ? -1 : 1;
+      setState({
+        currentChapterIndex: state.currentChapterIndex + delta,
+        currentFileIndex: 0,
+        progress: 0,
+      });
+    },
+    [state.currentChapterIndex, chapterUnits.length, setState, saveCurrentProgress],
+  );
 
-  const handleChapterSelect = useCallback((index: number) => {
-    // 保存当前进度
-    saveCurrentProgress();
+  const handleChapterSelect = useCallback(
+    (index: number) => {
+      // 保存当前进度
+      saveCurrentProgress();
 
-    setState({
-      currentChapterIndex: index,
-      currentFileIndex: 0,
-      isSettingOpen: false,
-      progress: 0,
-    });
-  }, [setState, saveCurrentProgress]);
+      setState({
+        currentChapterIndex: index,
+        currentFileIndex: 0,
+        isSettingOpen: false,
+        progress: 0,
+      });
+    },
+    [setState, saveCurrentProgress],
+  );
 
   // ============ 主题和字体设置 ============
-  const updateSetting = useCallback(<K extends "themeMode" | "fontSize" | "readingMode">(
-    key: K, 
-    value: typeof state[K]
-  ) => {
-    setState({ [key]: value } as Pick<typeof state, K>);
-    setSettings({ ...settings, [key]: value } as typeof settings);
-  }, [settings, setSettings, setState]);
+  const updateSetting = useCallback(
+    <K extends "themeMode" | "fontSize" | "readingMode">(key: K, value: (typeof state)[K]) => {
+      setState({ [key]: value } as Pick<typeof state, K>);
+      setSettings({ ...settings, [key]: value } as typeof settings);
+    },
+    [settings, setSettings, setState],
+  );
 
   // 主题切换由阅读器内部处理，这里保留以备后续需要
   // const handleToggleTheme = useCallback(() => {
@@ -236,11 +256,14 @@ export default function EbookPlayTemplate({
 
   // 处理来自阅读器的主题变化
   // 支持 TxtReader (paper/parchment/dark) 与 PdfReader (light/dark) 两种回调类型
-  const handleReaderThemeChange = useCallback((readerTheme: "paper" | "parchment" | "dark" | "light") => {
-    // PdfReader 只有 light/dark，把 light 映射到最接近的明亮主题（parchment 为默认）
-    const theme: ThemeMode = readerTheme === "light" ? "parchment" : readerTheme;
-    updateSetting("themeMode", theme);
-  }, [updateSetting]);
+  const handleReaderThemeChange = useCallback(
+    (readerTheme: "paper" | "parchment" | "dark" | "light") => {
+      // PdfReader 只有 light/dark，把 light 映射到最接近的明亮主题（parchment 为默认）
+      const theme: ThemeMode = readerTheme === "light" ? "parchment" : readerTheme;
+      updateSetting("themeMode", theme);
+    },
+    [updateSetting],
+  );
 
   // ============ 进度控制 ============
   // 自动保存进度（防抖，每 3 秒最多保存一次）
@@ -255,13 +278,16 @@ export default function EbookPlayTemplate({
         });
       }
     },
-    { wait: 3000 }
+    { wait: 3000 },
   );
 
-  const handleProgressChange = useCallback((progress: number) => {
-    setState({ progress });
-    debouncedSaveProgress(progress);
-  }, [setState, debouncedSaveProgress]);
+  const handleProgressChange = useCallback(
+    (progress: number) => {
+      setState({ progress });
+      debouncedSaveProgress(progress);
+    },
+    [setState, debouncedSaveProgress],
+  );
 
   // ============ 导航栏控制 ============
   const handleOpenSettings = useCallback(() => {
@@ -289,7 +315,7 @@ export default function EbookPlayTemplate({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      
+
       // 优先级1: 设置面板
       if (state.isSettingOpen) {
         e.preventDefault();
@@ -297,10 +323,10 @@ export default function EbookPlayTemplate({
         setState({ isSettingOpen: false });
         return;
       }
-      
+
       // 仅在移动端模式下继续处理
       if (!isMobileMode || !mobileReaderRef.current) return;
-      
+
       // 优先级2: 搜索抽屉
       if (mobileReaderRef.current.isSearchOpen()) {
         e.preventDefault();
@@ -308,7 +334,7 @@ export default function EbookPlayTemplate({
         mobileReaderRef.current.closeSearch();
         return;
       }
-      
+
       // 优先级3: 目录抽屉
       if (mobileReaderRef.current.isTocOpen()) {
         e.preventDefault();
@@ -316,7 +342,7 @@ export default function EbookPlayTemplate({
         mobileReaderRef.current.closeToc();
         return;
       }
-      
+
       // 优先级4: 切换导航栏
       e.preventDefault();
       mobileReaderRef.current.toggleNav();
@@ -469,4 +495,10 @@ export default function EbookPlayTemplate({
 }
 
 export { default as EbookPlayTemplate } from "./index";
-export type { EbookPlayTemplateProps, ChapterUnit, ThemeMode, FontSize, ReadingMode } from "./types";
+export type {
+  EbookPlayTemplateProps,
+  ChapterUnit,
+  ThemeMode,
+  FontSize,
+  ReadingMode,
+} from "./types";

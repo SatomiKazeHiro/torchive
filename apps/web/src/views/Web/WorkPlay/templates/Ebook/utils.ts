@@ -20,7 +20,9 @@ export function filterEbookFiles(files: string[]): string[] {
   });
 }
 
-/** 从 URL state 解析初始文件路径 */
+/** 从 URL state 解析初始文件路径(已废弃:PlayView 直接把解析后的完整路径作为 initialFilePath 传入)
+ *  保留是为了不破坏潜在外部引用;新代码请勿使用。
+ *  @deprecated */
 export function parseInitialFilePath(locationState: unknown): string | undefined {
   return (locationState as { filePath?: string })?.filePath;
 }
@@ -209,9 +211,7 @@ export async function streamReadText(url: string, callbacks: StreamCallbacks) {
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() || "";
 
-      const newParagraphs = lines
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
+      const newParagraphs = lines.map((line) => line.trim()).filter((line) => line.length > 0);
 
       if (newParagraphs.length > 0) {
         onParagraphs(newParagraphs);
@@ -274,14 +274,22 @@ export function calculateVirtualList({
 // ==================== 进度计算 ====================
 
 /** 计算阅读进度 */
-export function calculateProgress(scrollTop: number, scrollHeight: number, clientHeight: number): number {
+export function calculateProgress(
+  scrollTop: number,
+  scrollHeight: number,
+  clientHeight: number,
+): number {
   const maxScroll = Math.max(0, scrollHeight - clientHeight);
   if (maxScroll <= 0) return 100;
   return Math.min(100, Math.round((scrollTop / maxScroll) * 100));
 }
 
 /** 根据进度计算滚动位置 */
-export function calculateScrollTopFromProgress(progress: number, scrollHeight: number, clientHeight: number): number {
+export function calculateScrollTopFromProgress(
+  progress: number,
+  scrollHeight: number,
+  clientHeight: number,
+): number {
   const maxScroll = Math.max(0, scrollHeight - clientHeight);
   if (progress >= 100) return maxScroll;
   return (progress / 100) * maxScroll;

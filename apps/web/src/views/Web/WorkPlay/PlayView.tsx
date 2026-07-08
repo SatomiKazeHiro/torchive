@@ -4,6 +4,7 @@ import { createUserHistory } from "@/api/web";
 import { useUser } from "@/contexts/useUser";
 import { transformEntities } from "@/mappers/work";
 import { useWorkWithContext } from "@/hooks/useWorkWithContext";
+import { shortHash } from "@/utils/shortHash";
 import { cn } from "@/components/utils/common";
 import Navbar from "@/features/navigation/NavBar";
 import MixturePlayTemplate from "./templates/Mixture";
@@ -38,14 +39,7 @@ function PlayView() {
   const { user } = useUser();
 
   // 从路由 state 获取初始文件路径(向后兼容旧链接)
-  const initialFilePath = (location.state as { filePath?: string })?.filePath;
-
-  // 首次进入时的 asset(URL ?asset= 或回退到 location.state)
-  // useMemo 空依赖,只在挂载时计算一次,避免后续 asset 切换反复写历史
-  const initialAsset = useMemo(() => {
-    return searchParams.get("asset") ?? initialFilePath ?? undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const stateFilePath = (location.state as { filePath?: string })?.filePath;
 
   const { work, categoryInfo, recommendedWorks, loading, error, domainName, refetch } =
     useWorkWithContext({ id, domain, category });
@@ -55,15 +49,45 @@ function PlayView() {
     ? { work, entities: transformEntities(work) }
     : null;
 
+  // URL ?asset=<shortHash> → 全路径(work 内 local 查表)
+  // 5 个非 Video 模板的初值都从这里走,Video 模板有自己的 hook
+  const { initialFilePath, initialAsset } = useMemo(() => {
+    if (!transformedWorkData) {
+      return { initialFilePath: stateFilePath, initialAsset: undefined };
+    }
+    const entities = transformedWorkData.entities;
+    const hashToPath = new Map<string, string>();
+    for (const p of entities.assets ?? []) hashToPath.set(shortHash(p, 8), p);
+    for (const sec of entities.section ?? []) {
+      for (const p of sec.files ?? []) hashToPath.set(shortHash(p, 8), p);
+    }
+    for (const p of entities.orphanAssets ?? []) hashToPath.set(shortHash(p, 8), p);
+
+    const urlAsset = searchParams.get("asset") ?? undefined;
+    const urlHash = hashToPath.get(urlAsset ?? "");
+    const resolvedFromUrl = urlHash ?? undefined;
+    const resolvedFromState = stateFilePath ?? undefined;
+    // initialAsset 是 URL 上的原值(短 hash),仅用于首次创建观看历史
+    const initialAssetValue = urlAsset ?? resolvedFromState;
+    // initialFilePath 是模板真正消费的完整路径
+    const initialFilePathValue = resolvedFromUrl ?? resolvedFromState;
+    return {
+      initialFilePath: initialFilePathValue,
+      initialAsset: initialAssetValue,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transformedWorkData]);
+
   // 记录观看历史（已登录用户，静默失败,仅首次进入时记录）
   useEffect(() => {
-    if (!user || !id) return;
+    if (!user || !id || !initialAsset) return;
     createUserHistory({
       uid: user.uid,
       work_hash_id: id,
       params: initialAsset,
     }).catch(() => {});
-  }, [user, id, initialAsset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, id]);
 
   // 处理搜索
   const handleSearch = (query: string) => {

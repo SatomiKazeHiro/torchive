@@ -4,6 +4,7 @@ import { BiBook, BiFile } from "react-icons/bi";
 
 import { transformEntities } from "@/mappers/work";
 import { sortFiles } from "@/utils/sort";
+import { shortHash } from "@/utils/shortHash";
 import { filterEbookFiles } from "@/utils/fileHelper";
 
 import WorkDetailShell from "../components/WorkDetailShell";
@@ -20,7 +21,7 @@ const EBOOK_EXT = new Set(["epub", "mobi", "azw", "azw3"]);
 function getFileIcon(file: string): ReactNode {
   const ext = file.split(".").pop()?.toLowerCase() || "";
   if (ext === "pdf") return <BiBook className="h-4 w-4 text-red-400" />;
-  if (EBOOK_EXT.has(ext)) return <BiBook className="h-4 w-4 text-deep-black" />;
+  if (EBOOK_EXT.has(ext)) return <BiBook className="text-deep-black h-4 w-4" />;
   return <BiFile className="h-4 w-4 text-slate-400" />;
 }
 
@@ -51,12 +52,7 @@ function generateTabs(entities: EntitiesJson): FileTab[] {
   return tabs;
 }
 
-export default function EbookTemplate({
-  work,
-  domain,
-  category,
-  domainName,
-}: WorkTemplateProps) {
+export default function EbookTemplate({ work, domain, category, domainName }: WorkTemplateProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -65,7 +61,7 @@ export default function EbookTemplate({
   const title = work.detail?.title || work.work;
 
   const handlePlay = (file: string) =>
-    navigate(`/${domain}/${category}/${id}/play`, { state: { filePath: file } });
+    navigate(`/${domain}/${category}/${id}/play?asset=${shortHash(file, 8)}`);
 
   return (
     <WorkDetailShell

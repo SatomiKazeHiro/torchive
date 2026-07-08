@@ -4,6 +4,7 @@ import { BiFile, BiMoviePlay } from "react-icons/bi";
 
 import { transformEntities } from "@/mappers/work";
 import { sortFiles } from "@/utils/sort";
+import { shortHash } from "@/utils/shortHash";
 
 import WorkDetailShell from "../components/WorkDetailShell";
 import PosterCover from "../components/PosterCover";
@@ -42,12 +43,7 @@ function generateTabs(entities: EntitiesJson): FileTab[] {
   return tabs;
 }
 
-export default function MixtureTemplate({
-  work,
-  domain,
-  category,
-  domainName,
-}: WorkTemplateProps) {
+export default function MixtureTemplate({ work, domain, category, domainName }: WorkTemplateProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -56,7 +52,7 @@ export default function MixtureTemplate({
   const title = work.detail?.title || work.work;
 
   const handlePlay = (file: string) =>
-    navigate(`/${domain}/${category}/${id}/play`, { state: { filePath: file } });
+    navigate(`/${domain}/${category}/${id}/play?asset=${shortHash(file, 8)}`);
 
   return (
     <WorkDetailShell

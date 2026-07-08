@@ -5,6 +5,7 @@ import { BiFolder, BiPlay } from "react-icons/bi";
 import { Empty, Pagination } from "@/components";
 import { transformEntities } from "@/mappers/work";
 import { sortFiles } from "@/utils/sort";
+import { shortHash } from "@/utils/shortHash";
 import { filterVideoFiles, getFileDisplayName, isImageFile } from "@/utils/fileHelper";
 
 import WorkDetailShell from "../components/WorkDetailShell";
@@ -60,12 +61,7 @@ function generateTabs(entities: EntitiesJson): Array<FileTab & { allFiles: strin
   return tabs;
 }
 
-export default function VideoTemplate({
-  work,
-  domain,
-  category,
-  domainName,
-}: WorkTemplateProps) {
+export default function VideoTemplate({ work, domain, category, domainName }: WorkTemplateProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -74,7 +70,7 @@ export default function VideoTemplate({
   const title = work.detail?.title || work.work;
 
   const handlePlay = (file: string) =>
-    navigate(`/${domain}/${category}/${id}/play`, { state: { filePath: file } });
+    navigate(`/${domain}/${category}/${id}/play?asset=${shortHash(file, 8)}`);
 
   return (
     <WorkDetailShell
@@ -111,7 +107,7 @@ function VideoGrid({
       <Empty
         size="lg"
         iconVariant="flat"
-        icon={<BiFolder className="h-12 w-12 text-faint" strokeWidth={1} />}
+        icon={<BiFolder className="text-faint h-12 w-12" strokeWidth={1} />}
         description="暂无内容"
       />
     );

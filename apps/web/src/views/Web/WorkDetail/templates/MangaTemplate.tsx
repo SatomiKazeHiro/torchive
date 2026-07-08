@@ -5,6 +5,7 @@ import { BiBook, BiFolder } from "react-icons/bi";
 import { Empty } from "@/components";
 import { transformEntities } from "@/mappers/work";
 import { sortFiles } from "@/utils/sort";
+import { shortHash } from "@/utils/shortHash";
 import { filterImageFiles } from "@/utils/fileHelper";
 
 import WorkDetailShell from "../components/WorkDetailShell";
@@ -82,13 +83,7 @@ function LazyImage({ src, alt, className }: { src: string; alt: string; classNam
   );
 }
 
-function ImageGrid({
-  files,
-  onSelect,
-}: {
-  files: string[];
-  onSelect: (file: string) => void;
-}) {
+function ImageGrid({ files, onSelect }: { files: string[]; onSelect: (file: string) => void }) {
   const [loadedCount, setLoadedCount] = useState(LOAD_MORE_COUNT);
 
   if (files.length === 0) {
@@ -96,7 +91,7 @@ function ImageGrid({
       <Empty
         size="lg"
         iconVariant="flat"
-        icon={<BiFolder className="h-12 w-12 text-faint" strokeWidth={1} />}
+        icon={<BiFolder className="text-faint h-12 w-12" strokeWidth={1} />}
         description="暂无内容"
       />
     );
@@ -112,7 +107,11 @@ function ImageGrid({
           const pageNum = idx + 1;
           const fileName = file.split("/").pop() || file;
           return (
-            <div key={`${file}-${idx}`} className="group cursor-pointer" onClick={() => onSelect(file)}>
+            <div
+              key={`${file}-${idx}`}
+              className="group cursor-pointer"
+              onClick={() => onSelect(file)}
+            >
               <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
                 <LazyImage src={file} alt={fileName} className="h-full w-full" />
                 <div className="absolute right-1.5 bottom-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
@@ -137,18 +136,15 @@ function ImageGrid({
         </div>
       )}
       {!hasMore && files.length > LOAD_MORE_COUNT && (
-        <div className="mt-8 mb-4 text-center text-sm text-slate-400">已加载全部 {files.length} 张图片</div>
+        <div className="mt-8 mb-4 text-center text-sm text-slate-400">
+          已加载全部 {files.length} 张图片
+        </div>
       )}
     </div>
   );
 }
 
-export default function MangaTemplate({
-  work,
-  domain,
-  category,
-  domainName,
-}: WorkTemplateProps) {
+export default function MangaTemplate({ work, domain, category, domainName }: WorkTemplateProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -157,7 +153,7 @@ export default function MangaTemplate({
   const title = work.detail?.title || work.work;
 
   const handleRead = (file: string) =>
-    navigate(`/${domain}/${category}/${id}/play`, { state: { filePath: file } });
+    navigate(`/${domain}/${category}/${id}/play?asset=${shortHash(file, 8)}`);
 
   return (
     <WorkDetailShell
@@ -168,7 +164,9 @@ export default function MangaTemplate({
       primaryLabel="开始阅读"
       cover={<PosterCover coverUrl={work.detail?.cover ?? ""} title={title} />}
     >
-      <TabsPanel tabs={tabs} showTabsWhenSingle={false}
+      <TabsPanel
+        tabs={tabs}
+        showTabsWhenSingle={false}
         renderTabContent={(tab) => <ImageGrid files={tab.files} onSelect={handleRead} />}
       />
     </WorkDetailShell>

@@ -4,6 +4,7 @@ import { BiMusic } from "react-icons/bi";
 
 import { transformEntities } from "@/mappers/work";
 import { sortFiles } from "@/utils/sort";
+import { shortHash } from "@/utils/shortHash";
 import { filterAudioFiles } from "@/utils/fileHelper";
 
 import WorkDetailShell from "../components/WorkDetailShell";
@@ -82,12 +83,7 @@ function VinylCover({ coverUrl, title }: { coverUrl: string; title: string }) {
   );
 }
 
-export default function MusicTemplate({
-  work,
-  domain,
-  category,
-  domainName,
-}: WorkTemplateProps) {
+export default function MusicTemplate({ work, domain, category, domainName }: WorkTemplateProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -96,7 +92,7 @@ export default function MusicTemplate({
   const title = work.detail?.title || work.work;
 
   const handlePlay = (file: string) =>
-    navigate(`/${domain}/${category}/${id}/play`, { state: { filePath: file } });
+    navigate(`/${domain}/${category}/${id}/play?asset=${shortHash(file, 8)}`);
 
   return (
     <WorkDetailShell

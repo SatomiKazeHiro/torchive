@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useSetState, useLocalStorageState } from "ahooks";
 import { BiImages, BiImage } from "react-icons/bi";
 
@@ -7,12 +7,7 @@ import { cn } from "@/components/utils/common";
 import toPrevCursor from "@/assets/svg-icons/to-prev_x32.svg";
 import toNextCursor from "@/assets/svg-icons/to-next_x32.svg";
 import { LazyImage, SettingsPanel, Toolbar } from "./components";
-import {
-  generateChapterUnits,
-  parseInitialFilePath,
-  findChapterIndexByFile,
-  findPageIndexInChapter,
-} from "./utils";
+import { generateChapterUnits, findChapterIndexByFile, findPageIndexInChapter } from "./utils";
 import { DEFAULT_ESTIMATED_HEIGHT, SAMPLE_SIZE, TOOLBAR_HIDE_DELAY } from "./constants";
 
 import type { LazyImageRef } from "./components/LazyImage";
@@ -25,9 +20,9 @@ export default function MangaPlayTemplate({
   category,
   loading,
   error,
+  initialFilePath,
 }: MangaPlayTemplateProps) {
   const navigate = useNavigate();
-  const location = useLocation();
   const containerRef = useRef<HTMLDivElement>(null);
   const stripContainerRef = useRef<HTMLDivElement>(null);
   const autoPlayTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,10 +76,7 @@ export default function MangaPlayTemplate({
       const { work, entities } = transformedWorkData;
       const units = generateChapterUnits(entities);
 
-      // 从 URL state 获取初始文件路径
-      const initialFilePath = parseInitialFilePath(location.state);
-
-      // 确定当前章节索引：未初始化时根据 URL state 计算，否则跟随 state
+      // 确定当前章节索引：未初始化时根据传入的 initialFilePath 计算，否则跟随 state
       let chapterIndex = state.currentChapterIndex;
       if (!hasInitializedRef.current && initialFilePath && units.length > 0) {
         chapterIndex = findChapterIndexByFile(units, initialFilePath);
@@ -103,8 +95,8 @@ export default function MangaPlayTemplate({
         isFirstChapter,
         isLastChapter,
       };
-    // location.state 作为初始跳转来源，每次渲染引用可能变化，故有意忽略以避免重复重算
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      // initialFilePath 作为初始跳转来源，引用稳定；有意忽略以避免每次 render 重复重算
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [transformedWorkData, state.currentChapterIndex, state.currentPage]);
 
   // 当前图片 URL
@@ -119,11 +111,10 @@ export default function MangaPlayTemplate({
     return currentChapter.files[state.currentPage - 1];
   }, [currentChapter, state.currentPage]);
 
-  // 从 URL state 初始化章节和页码（仅执行一次）
+  // 从传入的 initialFilePath 初始化章节和页码（仅执行一次）
   useEffect(() => {
     if (hasInitializedRef.current || !transformedWorkData) return;
 
-    const initialFilePath = parseInitialFilePath(location.state);
     if (!initialFilePath) {
       hasInitializedRef.current = true;
       return;
@@ -140,7 +131,7 @@ export default function MangaPlayTemplate({
     }
 
     hasInitializedRef.current = true;
-  }, [transformedWorkData, location.state, setState]);
+  }, [transformedWorkData, initialFilePath, setState]);
 
   // 预加载图片（当前页的前后各2页）
   useEffect(() => {
