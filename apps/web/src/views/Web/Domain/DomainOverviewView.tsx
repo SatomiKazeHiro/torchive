@@ -3,21 +3,22 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { navigateToWorkDetailByWork } from "@/utils/navigation";
 import { getWorkList, getDomains, getCategories } from "@/api/web";
 import { generateCoverUrl } from "@/mappers/work";
-import { Pagination, Poster, Empty } from "@/components";
+import { Pagination, PosterV2, Empty } from "@/components";
 
 const PAGE_SIZE = 15;
 
 function DomainOverviewView() {
   const navigate = useNavigate();
+  // 路径参数唯一驱动 domain/category；query 只承担 page
   const { domain: pathDomain, category: pathCategory } = useParams<{
-    domain?: string;
+    domain: string;
     category?: string;
   }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // URL 是唯一真源：路径参数优先，搜索参数兜底，未指定时为 "all"
-  const selectedDomain = pathDomain || searchParams.get("domain") || "all";
-  const selectedCategory = pathCategory || searchParams.get("category") || "all";
+  const selectedDomain = pathDomain;
+  // null = 该 domain 下全部(category 可反选);有值 = 锁定到具体分类
+  const selectedCategory = pathCategory ?? null;
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
   const [works, setWorks] = useState<Work[]>([]);
@@ -32,15 +33,15 @@ function DomainOverviewView() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
 
-  const fetchWorks = useCallback(async (page: number, domain: string, category: string) => {
+  const fetchWorks = useCallback(async (page: number, domain: string, category: string | null) => {
     setLoading(true);
     setError(null);
     try {
       const response = await getWorkList({
         page,
         limit: PAGE_SIZE,
-        domain: domain === "all" ? undefined : domain,
-        category: category === "all" ? undefined : category,
+        domain,
+        category: category ?? undefined,
         order: { create_time: "DESC" },
       });
       setWorks(response.data);
@@ -70,11 +71,11 @@ function DomainOverviewView() {
   }, []);
 
   useEffect(() => {
+    if (!selectedDomain) {
+      setCategories([]);
+      return;
+    }
     const fetchCategories = async () => {
-      if (selectedDomain === "all") {
-        setCategories([]);
-        return;
-      }
       setCategoriesLoading(true);
       try {
         const response = await getCategories(selectedDomain);
@@ -89,38 +90,23 @@ function DomainOverviewView() {
   }, [selectedDomain]);
 
   useEffect(() => {
+    if (!selectedDomain) return;
     fetchWorks(currentPage, selectedDomain, selectedCategory);
   }, [currentPage, selectedDomain, selectedCategory, fetchWorks]);
 
+  // 切 domain/category → navigate 改 path,自动丢掉 page(走默认值 1)
   const handleDomainChange = (domainId: string) => {
-    const params: Record<string, string> = { page: "1" };
-    if (domainId !== "all") {
-      params.domain = domainId;
-    }
-    setSearchParams(params);
+    navigate(`/${domainId}`);
   };
 
-  const handleCategoryChange = (categoryId: string) => {
-    const params: Record<string, string> = { page: "1" };
-    if (selectedDomain !== "all") {
-      params.domain = selectedDomain;
-    }
-    if (categoryId !== "all") {
-      params.category = categoryId;
-    }
-    setSearchParams(params);
+  const handleCategoryChange = (categoryId: string | null) => {
+    // null = 反选,等价"该 domain 全部"
+    navigate(categoryId === null ? `/${selectedDomain}` : `/${selectedDomain}/${categoryId}`);
   };
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
-    const params: Record<string, string> = { page: page.toString() };
-    if (selectedDomain !== "all") {
-      params.domain = selectedDomain;
-    }
-    if (selectedCategory !== "all") {
-      params.category = selectedCategory;
-    }
-    setSearchParams(params);
+    setSearchParams({ page: page.toString() });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -137,16 +123,6 @@ function DomainOverviewView() {
             <span className="mr-2 text-xs font-medium text-zinc-700 dark:text-zinc-300">
               主题：
             </span>
-            <button
-              onClick={() => handleDomainChange("all")}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${
-                selectedDomain === "all"
-                  ? "border border-zinc-800 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border border-transparent bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
-              }`}
-            >
-              全部
-            </button>
             {domainsLoading ? (
               <span className="text-sm text-zinc-500">加载中...</span>
             ) : (
@@ -166,37 +142,32 @@ function DomainOverviewView() {
             )}
           </div>
 
-          {selectedDomain !== "all" && (
+          {selectedDomain && categories.length > 0 && (
             <div className="flex items-center gap-2 overflow-x-auto border-t border-zinc-100 py-2.5 dark:border-zinc-800">
               <span className="mr-2 text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 分类：
               </span>
-              <button
-                onClick={() => handleCategoryChange("all")}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === "all"
-                    ? "border border-zinc-800 bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900"
-                    : "border border-transparent bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
-                }`}
-              >
-                全部
-              </button>
               {categoriesLoading ? (
                 <span className="text-sm text-zinc-500">加载中...</span>
               ) : (
-                categories.map((category) => (
-                  <button
-                    key={category.category}
-                    onClick={() => handleCategoryChange(category.category)}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${
-                      selectedCategory === category.category
-                        ? "border border-zinc-800 bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900"
-                        : "border border-transparent bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
-                    }`}
-                  >
-                    {category.name || category.category}
-                  </button>
-                ))
+                categories.map((category) => {
+                  const isActive = selectedCategory === category.category;
+                  // 再点已选中的分类 = 反选(回退到该 domain 全部)
+                  const next = isActive ? null : category.category;
+                  return (
+                    <button
+                      key={category.category}
+                      onClick={() => handleCategoryChange(next)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${
+                        isActive
+                          ? "border border-zinc-800 bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900"
+                          : "border border-transparent bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      {category.name || category.category}
+                    </button>
+                  );
+                })
               )}
             </div>
           )}
@@ -231,7 +202,10 @@ function DomainOverviewView() {
             </div>
             <p className="text-sm text-zinc-500">{error}</p>
             <button
-              onClick={() => fetchWorks(currentPage, selectedDomain, selectedCategory)}
+              onClick={() => {
+                if (!selectedDomain) return;
+                fetchWorks(currentPage, selectedDomain, selectedCategory);
+              }}
               className="mt-4 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               重试
@@ -246,7 +220,7 @@ function DomainOverviewView() {
             ) : (
               <>
                 <div className="grid grid-cols-5 gap-5">
-                  {works.map((work) => (
+                  {/* {works.map((work) => (
                     <a
                       key={work.hash_id}
                       className="group block cursor-pointer"
@@ -261,7 +235,26 @@ function DomainOverviewView() {
                         {work.detail?.title || work.work}
                       </div>
                     </a>
-                  ))}
+                  ))} */}
+                  {works.map((work) => {
+                    const title = work.detail?.title || work.work;
+                    const cover = generateCoverUrl(work);
+                    return (
+                      <div className="w-full">
+                        <a
+                          key={work.hash_id}
+                          className="group block cursor-pointer"
+                          title={title}
+                          onClick={() => navigateToWorkDetailByWork(navigate, work)}
+                        >
+                          <PosterV2 src={cover} alt={title} />
+                          <div className="mt-2 line-clamp-2 text-sm text-zinc-600 transition-colors group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200">
+                            {title}
+                          </div>
+                        </a>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-10">
