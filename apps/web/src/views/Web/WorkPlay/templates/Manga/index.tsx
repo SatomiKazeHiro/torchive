@@ -7,7 +7,8 @@ import { cn } from "@/components/utils/common";
 import toPrevCursor from "@/assets/svg-icons/to-prev_x32.svg";
 import toNextCursor from "@/assets/svg-icons/to-next_x32.svg";
 import { LazyImage, SettingsPanel, Toolbar } from "./components";
-import { generateChapterUnits, findChapterIndexByFile, findPageIndexInChapter } from "./utils";
+import { generateChapterUnits } from "./utils";
+import { useMangaPlayState } from "./useMangaPlayState";
 import { DEFAULT_ESTIMATED_HEIGHT, SAMPLE_SIZE, TOOLBAR_HIDE_DELAY } from "./constants";
 
 import type { LazyImageRef } from "./components/LazyImage";
@@ -27,7 +28,6 @@ export default function MangaPlayTemplate({
   const stripContainerRef = useRef<HTMLDivElement>(null);
   const autoPlayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const hasInitializedRef = useRef(false);
 
   // 从 localStorage 读取设置
   const [settings, setSettings] = useLocalStorageState<{
@@ -40,10 +40,8 @@ export default function MangaPlayTemplate({
     },
   });
 
-  // 状态管理
+  // 局部 UI 状态(非 URL 状态)
   const [state, setState] = useSetState({
-    currentPage: 1,
-    currentChapterIndex: 0,
     isHover: false,
     isSettingOpen: false,
     isAutoPlay: false,
@@ -54,103 +52,70 @@ export default function MangaPlayTemplate({
   // 图片高度记录（用于动态估算）
   const [imageHeights, setImageHeights] = useState<Record<number, number>>({});
 
-  // 条漫模式下当前可见的图片索引
+  // 条漫模式下当前可见的图片索引（不入 URL）
   const [visibleImageIndex, setVisibleImageIndex] = useState(0);
   const imageRefs = useRef<(LazyImageRef | null)[]>([]);
   const lastModeRef = useRef<ReadingMode>(state.mode);
 
-  // ============ 数据解析 ============
-  const { work, chapterUnits, currentChapter, totalPages, isFirstChapter, isLastChapter } =
-    useMemo(() => {
-      if (!transformedWorkData) {
-        return {
-          work: null,
-          chapterUnits: [] as ChapterUnit[],
-          currentChapter: null as ChapterUnit | null,
-          totalPages: 0,
-          isFirstChapter: true,
-          isLastChapter: true,
-        };
-      }
+  // ============ 章节列表(纯数据) ============
+  const { work, chapterUnits } = useMemo(() => {
+    if (!transformedWorkData) {
+      return { work: null, chapterUnits: [] as ChapterUnit[] };
+    }
+    return {
+      work: transformedWorkData.work,
+      chapterUnits: generateChapterUnits(transformedWorkData.entities),
+    };
+  }, [transformedWorkData]);
 
-      const { work, entities } = transformedWorkData;
-      const units = generateChapterUnits(entities);
+  // ============ URL 状态(章节 + 页码由 ?chapter=&page= 驱动) ============
+  const { currentChapterIndex, currentPage, setPage, setChapterIndex } = useMangaPlayState(
+    chapterUnits,
+    initialFilePath,
+  );
 
-      // 确定当前章节索引：未初始化时根据传入的 initialFilePath 计算，否则跟随 state
-      let chapterIndex = state.currentChapterIndex;
-      if (!hasInitializedRef.current && initialFilePath && units.length > 0) {
-        chapterIndex = findChapterIndexByFile(units, initialFilePath);
-      }
+  const currentChapter = chapterUnits[currentChapterIndex] ?? null;
+  const totalPages = currentChapter?.files.length || 0;
+  const isFirstChapter = currentChapterIndex <= 0;
+  const isLastChapter = currentChapterIndex >= chapterUnits.length - 1;
 
-      const currentChapter = units[chapterIndex] || units[0] || null;
+  // 章节切换时清空历史图片高度,重新估算
+  useEffect(() => {
+    setImageHeights({});
+  }, [currentChapterIndex]);
 
-      const isFirstChapter = state.currentChapterIndex <= 0;
-      const isLastChapter = state.currentChapterIndex >= units.length - 1;
-
-      return {
-        work,
-        chapterUnits: units,
-        currentChapter,
-        totalPages: currentChapter?.files.length || 0,
-        isFirstChapter,
-        isLastChapter,
-      };
-      // initialFilePath 作为初始跳转来源，引用稳定；有意忽略以避免每次 render 重复重算
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [transformedWorkData, state.currentChapterIndex, state.currentPage]);
+  // 镜像 URL 状态供 autoPlay 定时器闭包读取最新值
+  const urlStateRef = useRef({ currentPage, currentChapterIndex, totalPages, isLastChapter });
+  useEffect(() => {
+    urlStateRef.current = { currentPage, currentChapterIndex, totalPages, isLastChapter };
+  }, [currentPage, currentChapterIndex, totalPages, isLastChapter]);
 
   // 当前图片 URL
   const currentImageUrl = useMemo(() => {
-    if (
-      !currentChapter ||
-      state.currentPage < 1 ||
-      state.currentPage > currentChapter.files.length
-    ) {
+    if (!currentChapter || currentPage < 1 || currentPage > currentChapter.files.length) {
       return null;
     }
-    return currentChapter.files[state.currentPage - 1];
-  }, [currentChapter, state.currentPage]);
-
-  // 从传入的 initialFilePath 初始化章节和页码（仅执行一次）
-  useEffect(() => {
-    if (hasInitializedRef.current || !transformedWorkData) return;
-
-    if (!initialFilePath) {
-      hasInitializedRef.current = true;
-      return;
-    }
-
-    const { entities } = transformedWorkData;
-    const units = generateChapterUnits(entities);
-    const foundIndex = findChapterIndexByFile(units, initialFilePath);
-    const foundChapter = units[foundIndex];
-
-    if (foundChapter) {
-      const initialPage = findPageIndexInChapter(foundChapter, initialFilePath);
-      setState({ currentChapterIndex: foundIndex, currentPage: initialPage });
-    }
-
-    hasInitializedRef.current = true;
-  }, [transformedWorkData, initialFilePath, setState]);
+    return currentChapter.files[currentPage - 1];
+  }, [currentChapter, currentPage]);
 
   // 预加载图片（当前页的前后各2页）
   useEffect(() => {
     if (!currentChapter || state.mode !== "single") return;
 
     const preloadRange = 2;
-    const start = Math.max(0, state.currentPage - 1 - preloadRange);
-    const end = Math.min(currentChapter.files.length, state.currentPage + preloadRange);
+    const start = Math.max(0, currentPage - 1 - preloadRange);
+    const end = Math.min(currentChapter.files.length, currentPage + preloadRange);
 
     for (let i = start; i < end; i++) {
-      if (i === state.currentPage - 1) continue; // 跳过当前页（已加载）
+      if (i === currentPage - 1) continue; // 跳过当前页（已加载）
       const img = new Image();
       img.src = currentChapter.files[i];
     }
-  }, [currentChapter, state.currentPage, state.mode]);
+  }, [currentChapter, currentPage, state.mode]);
 
   // 是否是第一页/最后一页
-  const isFirstPage = state.currentPage <= 1;
-  const isLastPage = state.currentPage >= totalPages;
+  const isFirstPage = currentPage <= 1;
+  const isLastPage = currentPage >= totalPages;
 
   // 计算平均高度
   const averageHeight = useMemo(() => {
@@ -185,37 +150,24 @@ export default function MangaPlayTemplate({
     setState({ isAutoPlay: true });
 
     autoPlayTimerRef.current = setInterval(() => {
-      setState((prev) => {
-        const isLastPageCurrent = prev.currentPage >= totalPages;
-        const isLastChapterCurrent = prev.currentChapterIndex >= chapterUnits.length - 1;
-
-        if (isLastPageCurrent) {
-          if (!isLastChapterCurrent) {
-            // 进入下一章，保持 isAutoPlay 为 true
-            return {
-              currentChapterIndex: prev.currentChapterIndex + 1,
-              currentPage: 1,
-              isAutoPlay: prev.isAutoPlay,
-            };
-          } else {
-            // 终章，停止播放，保持其他状态不变
-            return {
-              currentChapterIndex: prev.currentChapterIndex,
-              currentPage: prev.currentPage,
-              isAutoPlay: false,
-            };
-          }
+      // 闭包内读取最新 URL 状态(通过 urlStateRef 镜像)
+      const {
+        currentPage: cp,
+        currentChapterIndex: ci,
+        totalPages: tp,
+        isLastChapter: ilc,
+      } = urlStateRef.current;
+      if (cp >= tp) {
+        if (ilc) {
+          stopAutoPlay();
         } else {
-          // 下一页，保持其他状态不变
-          return {
-            currentChapterIndex: prev.currentChapterIndex,
-            currentPage: prev.currentPage + 1,
-            isAutoPlay: prev.isAutoPlay,
-          };
+          setChapterIndex(ci + 1);
         }
-      });
+      } else {
+        setPage(cp + 1);
+      }
     }, state.autoPlayInterval * 1000);
-  }, [state.autoPlayInterval, totalPages, chapterUnits.length, setState]);
+  }, [state.autoPlayInterval, setState, setChapterIndex, setPage, stopAutoPlay]);
 
   const toggleAutoPlay = useCallback(() => {
     if (state.mode !== "single") return;
@@ -254,37 +206,33 @@ export default function MangaPlayTemplate({
   // ============ 翻页操作 ============
   const handlePrevPage = useCallback(() => {
     if (state.isAutoPlay) stopAutoPlay();
-    setState({ currentPage: Math.max(1, state.currentPage - 1) });
-  }, [state.currentPage, state.isAutoPlay, setState, stopAutoPlay]);
+    setPage(currentPage - 1);
+  }, [currentPage, state.isAutoPlay, setPage, stopAutoPlay]);
 
   const handleNextPage = useCallback(() => {
     if (state.isAutoPlay) stopAutoPlay();
-    setState({ currentPage: Math.min(totalPages, state.currentPage + 1) });
-  }, [state.currentPage, totalPages, state.isAutoPlay, setState, stopAutoPlay]);
+    setPage(currentPage + 1);
+  }, [currentPage, state.isAutoPlay, setPage, stopAutoPlay]);
 
   // ============ 章节切换 ============
   const handlePrevChapter = useCallback(() => {
     if (isFirstChapter || state.isAutoPlay) return;
     stopAutoPlay();
-    const newIndex = state.currentChapterIndex - 1;
-    setState({ currentChapterIndex: newIndex, currentPage: 1 });
-    setImageHeights({});
-  }, [isFirstChapter, state.currentChapterIndex, state.isAutoPlay, setState, stopAutoPlay]);
+    setChapterIndex(currentChapterIndex - 1);
+  }, [isFirstChapter, currentChapterIndex, state.isAutoPlay, setChapterIndex, stopAutoPlay]);
 
   const handleNextChapter = useCallback(() => {
     if (isLastChapter || state.isAutoPlay) return;
     stopAutoPlay();
-    const newIndex = state.currentChapterIndex + 1;
-    setState({ currentChapterIndex: newIndex, currentPage: 1 });
-    setImageHeights({});
-  }, [isLastChapter, state.currentChapterIndex, state.isAutoPlay, setState, stopAutoPlay]);
+    setChapterIndex(currentChapterIndex + 1);
+  }, [isLastChapter, currentChapterIndex, state.isAutoPlay, setChapterIndex, stopAutoPlay]);
 
   const handleChapterSelect = useCallback(
     (index: number) => {
-      setState({ currentChapterIndex: index, currentPage: 1, isSettingOpen: false });
-      setImageHeights({});
+      setChapterIndex(index);
+      setState({ isSettingOpen: false });
     },
-    [setState],
+    [setChapterIndex, setState],
   );
 
   // ============ 模式切换 ============
@@ -300,7 +248,7 @@ export default function MangaPlayTemplate({
         lastModeRef.current = "single";
       } else if (currentMode === "strip" && newMode === "single") {
         // 条漫 → 单页：根据当前可见图片索引设置页码
-        setState({ currentPage: visibleImageIndex + 1 });
+        setPage(visibleImageIndex + 1);
         lastModeRef.current = "strip";
       }
 
@@ -314,6 +262,7 @@ export default function MangaPlayTemplate({
       settings,
       setState,
       setSettings,
+      setPage,
       stopAutoPlay,
     ],
   );
@@ -323,13 +272,13 @@ export default function MangaPlayTemplate({
     if (state.mode === "strip" && lastModeRef.current === "single") {
       // 使用 setTimeout 确保 DOM 已经渲染
       const timer = setTimeout(() => {
-        const targetIndex = state.currentPage - 1;
+        const targetIndex = currentPage - 1;
         imageRefs.current[targetIndex]?.scrollIntoView("auto");
         setVisibleImageIndex(targetIndex);
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [state.mode, state.currentPage]);
+  }, [state.mode, currentPage]);
 
   // ============ 自动播放间隔设置 ============
   const handleIntervalChange = useCallback(
@@ -529,7 +478,7 @@ export default function MangaPlayTemplate({
               <img
                 key={currentImageUrl}
                 src={currentImageUrl}
-                alt={`第 ${state.currentPage} 页`}
+                alt={`第 ${currentPage} 页`}
                 className="max-h-full max-w-full object-contain select-none"
                 draggable={false}
               />
@@ -606,7 +555,7 @@ export default function MangaPlayTemplate({
       <Toolbar
         isVisible={state.isHover}
         mode={state.mode}
-        currentPage={state.currentPage}
+        currentPage={currentPage}
         totalPages={totalPages}
         chapterUnits={chapterUnits}
         isFirstPage={isFirstPage}
@@ -634,7 +583,7 @@ export default function MangaPlayTemplate({
         mode={state.mode}
         isAutoPlay={state.isAutoPlay}
         autoPlayInterval={state.autoPlayInterval}
-        currentChapterIndex={state.currentChapterIndex}
+        currentChapterIndex={currentChapterIndex}
         chapterUnits={chapterUnits}
         onModeChange={handleModeChange}
         onIntervalChange={handleIntervalChange}
