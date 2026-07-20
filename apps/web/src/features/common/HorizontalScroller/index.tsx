@@ -27,7 +27,7 @@ export default function HorizontalScroller({ title, items = [], link }: Horizont
   const [lastRightClickTime, setLastRightClickTime] = useState(0);
   const tooltipTimerRef = useRef<NodeJS.Timeout | null>(null);
   const showEndAction = items.length > 0 && isAtEnd;
-const isEmpty = items.length === 0;
+  const isEmpty = items.length === 0;
 
   const updateScrollState = useCallback(() => {
     const el = containerRef.current;
@@ -157,11 +157,7 @@ const isEmpty = items.length === 0;
 
           {/* 右按钮 */}
           {isEmpty ? (
-            <button
-              disabled
-              className={scrollBtnDisableClass}
-              aria-label="暂无内容"
-            >
+            <button disabled className={scrollBtnDisableClass} aria-label="暂无内容">
               <BiChevronRight size={16} />
             </button>
           ) : showEndAction && link ? (
@@ -182,16 +178,12 @@ const isEmpty = items.length === 0;
                 onMouseLeave={resetTooltipTimer}
                 className={scrollBtnBaseClass}
               >
-                <BiChevronsRight size={16}  />
+                <BiChevronsRight size={16} />
               </button>
             </Tooltip>
           ) : (
             <button onClick={handleRightClick} className={scrollBtnBaseClass}>
-              {showEndAction ? (
-                <BiChevronsRight size={16} />
-              ) : (
-                <BiChevronRight size={16}  />
-              )}
+              {showEndAction ? <BiChevronsRight size={16} /> : <BiChevronRight size={16} />}
             </button>
           )}
         </div>
@@ -206,9 +198,13 @@ const isEmpty = items.length === 0;
             <div className="flex gap-4">
               {items.map((item, i) => (
                 <div key={i} className="w-[200px] shrink-0 p-px">
-                  <a className="group block cursor-pointer" title={item.label} onClick={() => open(item)}>
+                  <a
+                    className="group block cursor-pointer"
+                    title={item.label}
+                    onClick={() => open(item)}
+                  >
                     <PosterV2 src={item.cover} alt={item.label} />
-                    <div className="mt-2 line-clamp-2 text-sm text-zinc-600 transition-colors group-hover:text-zinc-900">
+                    <div className="mt-2 line-clamp-2 text-sm text-zinc-600 transition-colors group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200">
                       {item.label}
                     </div>
                   </a>

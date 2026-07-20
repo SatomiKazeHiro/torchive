@@ -2,7 +2,7 @@ import { ReactNode, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { BiBook, BiFile } from "react-icons/bi";
 
-import { transformEntities } from "@/mappers/work";
+import { transformEntities, generateCoverUrl } from "@/mappers/work";
 import { sortFiles } from "@/utils/sort";
 import { shortHash } from "@/utils/shortHash";
 import { filterEbookFiles } from "@/utils/fileHelper";
@@ -59,6 +59,7 @@ export default function EbookTemplate({ work, domain, category, domainName }: Wo
   const entities = useMemo(() => transformEntities(work), [work]);
   const tabs = useMemo(() => generateTabs(entities), [entities]);
   const title = work.detail?.title || work.work;
+  const cover = generateCoverUrl(work);
 
   const handlePlay = (file: string) =>
     navigate(`/${domain}/${category}/${id}/play?asset=${shortHash(file, 8)}`);
@@ -70,7 +71,7 @@ export default function EbookTemplate({ work, domain, category, domainName }: Wo
       category={category}
       domainName={domainName}
       primaryLabel="开始阅读"
-      cover={<PosterCover coverUrl={work.detail?.cover ?? ""} title={title} />}
+      cover={<PosterCover coverUrl={cover} title={title} />}
     >
       <TabsPanel
         tabs={tabs}

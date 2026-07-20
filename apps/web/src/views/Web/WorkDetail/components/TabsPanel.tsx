@@ -35,7 +35,7 @@ export default function TabsPanel<T extends FileTab = FileTab>({
         bordered
         size="lg"
         iconVariant="flat"
-        icon={<BiFolder className="h-12 w-12 text-faint" strokeWidth={1} />}
+        icon={<BiFolder className="text-faint h-12 w-12" strokeWidth={1} />}
         description="暂无数据"
       />
     );
@@ -58,7 +58,6 @@ export default function TabsPanel<T extends FileTab = FileTab>({
         activeKey={activeTab}
         onChange={setActiveTab}
         tabBarClassName="px-4 pt-2 border-b border-slate-100 dark:border-slate-800"
-        contentClassName="p-0"
         items={tabs.map((tab) => ({
           key: tab.key,
           label: tab.label,

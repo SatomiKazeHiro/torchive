@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { BiFolder, BiPlay } from "react-icons/bi";
 
 import { Empty, Pagination } from "@/components";
-import { transformEntities } from "@/mappers/work";
+import { transformEntities, generateCoverUrl } from "@/mappers/work";
 import { sortFiles } from "@/utils/sort";
 import { shortHash } from "@/utils/shortHash";
 import { filterVideoFiles, getFileDisplayName, isImageFile } from "@/utils/fileHelper";
@@ -68,6 +68,7 @@ export default function VideoTemplate({ work, domain, category, domainName }: Wo
   const entities = useMemo(() => transformEntities(work), [work]);
   const tabs = useMemo(() => generateTabs(entities), [entities]);
   const title = work.detail?.title || work.work;
+  const cover = generateCoverUrl(work);
 
   const handlePlay = (file: string) =>
     navigate(`/${domain}/${category}/${id}/play?asset=${shortHash(file, 8)}`);
@@ -79,7 +80,7 @@ export default function VideoTemplate({ work, domain, category, domainName }: Wo
       category={category}
       domainName={domainName}
       primaryLabel="立即播放"
-      cover={<PosterCover coverUrl={work.detail?.cover ?? ""} title={title} />}
+      cover={<PosterCover coverUrl={cover} title={title} />}
     >
       <TabsPanel
         tabs={tabs}

@@ -1,4 +1,11 @@
-import { BiChevronDown, BiChevronRight, BiMoviePlay, BiImage, BiMusic, BiFile } from "react-icons/bi";
+import {
+  BiChevronDown,
+  BiChevronRight,
+  BiMoviePlay,
+  BiImage,
+  BiMusic,
+  BiFile,
+} from "react-icons/bi";
 import { getFileType } from "./utils";
 import { getFileName } from "@/utils/fileHelper";
 import type { SectionItem } from "./types";
@@ -92,7 +99,7 @@ export default function AccordionSection({
       </button>
 
       {/* 文件列表 */}
-      <div className="max-h-[300px] overflow-y-auto bg-white py-2 dark:bg-zinc-900">
+      <div className="max-h-[calc(100%-48px)] overflow-y-auto bg-white py-2 dark:bg-zinc-900">
         {item.files.map((file, index) => {
           const isActive = file === currentFilePath;
           const fileName = getFileName(file);
@@ -118,10 +125,12 @@ export default function AccordionSection({
                 {index + 1}
               </span>
               {/* 文件类型图标 */}
-              <span className={isActive ? "text-rich-black dark:text-zinc-100" : ""}>{getFileIcon(fileName)}</span>
+              <span className={isActive ? "text-rich-black dark:text-zinc-100" : ""}>
+                {getFileIcon(fileName)}
+              </span>
               {/* 文件名 */}
               <span
-                className={`min-w-0 flex-1 truncate text-sm ${isActive ? "font-medium text-rich-black dark:text-zinc-100" : ""}`}
+                className={`min-w-0 flex-1 truncate text-sm ${isActive ? "text-rich-black font-medium dark:text-zinc-100" : ""}`}
               >
                 {fileName}
               </span>

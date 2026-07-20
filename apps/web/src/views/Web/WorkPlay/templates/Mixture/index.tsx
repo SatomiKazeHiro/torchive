@@ -120,7 +120,7 @@ export default function MixturePlayTemplate({
             <Empty
               size="md"
               iconVariant="flat"
-              icon={<BiFolder className="h-16 w-16 text-faint" />}
+              icon={<BiFolder className="text-faint h-16 w-16" />}
               description="暂无内容"
             />
           </div>
@@ -131,7 +131,14 @@ export default function MixturePlayTemplate({
       <div className="flex h-full w-72 shrink-0 flex-col gap-3 xl:w-80">
         {/* 面包屑导航 */}
         <Breadcrumb
-          items={buildBreadcrumbItems({ domain, category, domainName, workName: title, showHome: true, overviewLabel: "总览" })}
+          items={buildBreadcrumbItems({
+            domain,
+            category,
+            domainName,
+            workName: title,
+            showHome: true,
+            overviewLabel: "总览",
+          })}
           extra={
             work && (
               <>
@@ -143,8 +150,8 @@ export default function MixturePlayTemplate({
                 />
                 <WatchLaterAction
                   work={work}
-                  className="rounded p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-deep-black dark:hover:bg-zinc-800"
-                  activeSlot={<BiSolidBookmark className="h-4 w-4 text-deep-black" />}
+                  className="hover:text-deep-black rounded p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  activeSlot={<BiSolidBookmark className="text-deep-black h-4 w-4" />}
                   inactiveSlot={<BiBookmark className="h-4 w-4" />}
                 />
               </>
@@ -168,11 +175,11 @@ export default function MixturePlayTemplate({
               <Empty
                 size="md"
                 iconVariant="flat"
-                icon={<BiFolder className="h-8 w-8 text-faint" />}
+                icon={<BiFolder className="text-faint h-8 w-8" />}
                 description="暂无数据"
               />
             ) : (
-              <div>
+              <div className="h-full">
                 {sectionItems.map((item) => (
                   <AccordionSection
                     key={item.key}
