@@ -9,6 +9,9 @@ export {
 // 歌单管理 hook
 export { usePlaylist } from "./usePlaylist";
 
+// URL 状态管理 hook
+export { useMusicPlayState } from "../useMusicPlayState";
+
 // 布局管理 hook
 export { useLayout } from "./useLayout";
 

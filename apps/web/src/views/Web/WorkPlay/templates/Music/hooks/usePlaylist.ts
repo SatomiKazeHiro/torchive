@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useMemo } from "react";
 import type { TransformedWorkData } from "../../Mixture";
 import type { PlaylistItem } from "../types";
 import { sortFiles } from "@/utils/sort";
@@ -17,26 +17,11 @@ function isAudioFile(fileName: string): boolean {
 
 interface UsePlaylistOptions {
   transformedWorkData: TransformedWorkData | null;
-  initialFilePath?: string;
 }
 
 interface UsePlaylistReturn {
   /** 播放列表 */
   playlist: PlaylistItem[];
-  /** 当前播放索引 */
-  currentIndex: number;
-  /** 当前播放的文件路径 */
-  currentPath: string | null;
-  /** 切换到指定索引 */
-  playAtIndex: (index: number) => void;
-  /** 切换到上一首 */
-  playPrev: () => void;
-  /** 切换到下一首 */
-  playNext: () => void;
-  /** 是否有上一首 */
-  hasPrev: boolean;
-  /** 是否有下一首 */
-  hasNext: boolean;
   /** 作品标题 */
   workTitle: string;
   /** 作品封面 */
@@ -44,20 +29,12 @@ interface UsePlaylistReturn {
 }
 
 /**
- * 播放列表管理 Hook
- * 
- * 功能：
- * - 从作品数据生成播放列表（仅音频文件）
- * - 管理当前播放索引
- * - 提供上一首/下一首导航
- * - 支持初始文件路径定位
+ * 歌单数据 Hook(纯数据,无状态)
+ *
+ * 作用:从作品数据中按顺序聚合音频文件,生成播放列表。
+ * 当前播放索引由 useMusicPlayState(URL 状态)管理,不在此 hook 内。
  */
-export function usePlaylist({
-  transformedWorkData,
-  initialFilePath,
-}: UsePlaylistOptions): UsePlaylistReturn {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
+export function usePlaylist({ transformedWorkData }: UsePlaylistOptions): UsePlaylistReturn {
   // 生成播放列表
   const playlist = useMemo<PlaylistItem[]>(() => {
     if (!transformedWorkData) return [];
@@ -116,55 +93,11 @@ export function usePlaylist({
     return items;
   }, [transformedWorkData]);
 
-  // 根据初始文件路径定位播放位置
-  useEffect(() => {
-    if (playlist.length === 0) return;
-
-    if (initialFilePath) {
-      const index = playlist.findIndex((item) => item.path === initialFilePath);
-      if (index !== -1) {
-        setCurrentIndex(index);
-      } else {
-        // 如果找不到，默认播放第一首
-        setCurrentIndex(0);
-      }
-    } else {
-      setCurrentIndex(0);
-    }
-  }, [playlist, initialFilePath]);
-
-  // 当前播放的文件路径
-  const currentPath = useMemo(() => {
-    if (playlist.length === 0) return null;
-    return playlist[currentIndex]?.path || null;
-  }, [playlist, currentIndex]);
-
-  // 切换到指定索引
-  const playAtIndex = useCallback((index: number) => {
-    if (index >= 0 && index < playlist.length) {
-      setCurrentIndex(index);
-    }
-  }, [playlist.length]);
-
-  // 上一首
-  const playPrev = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-    }
-  }, [currentIndex]);
-
-  // 下一首
-  const playNext = useCallback(() => {
-    if (currentIndex < playlist.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  }, [currentIndex, playlist.length]);
-
   // 作品信息
   const workTitle = useMemo(() => {
-    return transformedWorkData?.work?.detail?.title || 
-           transformedWorkData?.work?.work || 
-           "未知作品";
+    return (
+      transformedWorkData?.work?.detail?.title || transformedWorkData?.work?.work || "未知作品"
+    );
   }, [transformedWorkData]);
 
   const workCover = useMemo(() => {
@@ -173,13 +106,6 @@ export function usePlaylist({
 
   return {
     playlist,
-    currentIndex,
-    currentPath,
-    playAtIndex,
-    playPrev,
-    playNext,
-    hasPrev: currentIndex > 0,
-    hasNext: currentIndex < playlist.length - 1,
     workTitle,
     workCover,
   };

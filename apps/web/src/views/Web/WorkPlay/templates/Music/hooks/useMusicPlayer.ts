@@ -1,12 +1,20 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { usePlaylist, useLayout, useAudioPlayer, useAudioMetadata, useCoverColor, useLyrics } from "./";
+import {
+  usePlaylist,
+  useLayout,
+  useAudioPlayer,
+  useAudioMetadata,
+  useCoverColor,
+  useLyrics,
+  useMusicPlayState,
+} from "./";
 import { parseLRCMap } from "@/utils/lyric";
 import type { MusicPlayTemplateProps } from "../types";
 import type { SongResult } from "../../Mixture/types";
 
 /**
  * 音乐播放器主 Hook
- * 
+ *
  * 整合所有子 hooks，提供完整的音乐播放器功能
  */
 export function useMusicPlayer({
@@ -35,39 +43,46 @@ export function useMusicPlayer({
   // ===== 歌词来源追踪 =====
   const [lyricSource, setLyricSource] = useState<"embedded" | "network" | "none">("none");
 
-  // ===== 播放列表管理 =====
-  const {
-    playlist,
-    currentIndex,
-    currentPath,
-    playAtIndex,
-    playPrev,
-    playNext,
-    hasPrev,
-    hasNext,
-    workTitle,
-    workCover,
-  } = usePlaylist({
-    transformedWorkData,
-    initialFilePath,
-  });
+  // ===== 播放列表(纯数据) =====
+  const { playlist, workTitle, workCover } = usePlaylist({ transformedWorkData });
+
+  // ===== URL 状态(由短 hash 驱动,首屏 deep link 友好) =====
+  const { currentIndex, currentAsset, setAsset } = useMusicPlayState(playlist, initialFilePath);
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < playlist.length - 1;
+
+  // ===== 歌单内导航(通过 setAsset 写回 URL) =====
+  const playAtIndex = useCallback(
+    (index: number) => {
+      const item = playlist[index];
+      if (item) setAsset(item.path);
+    },
+    [playlist, setAsset],
+  );
+  const playPrev = useCallback(() => {
+    if (currentIndex > 0) {
+      const item = playlist[currentIndex - 1];
+      if (item) setAsset(item.path);
+    }
+  }, [currentIndex, playlist, setAsset]);
+  const playNext = useCallback(() => {
+    if (currentIndex >= 0 && currentIndex < playlist.length - 1) {
+      const item = playlist[currentIndex + 1];
+      if (item) setAsset(item.path);
+    }
+  }, [currentIndex, playlist, setAsset]);
 
   // ===== 音频源 =====
-  const currentItem = playlist[currentIndex];
-  const audioSrc = currentPath || "";
+  const currentItem = currentIndex >= 0 ? playlist[currentIndex] : null;
+  const audioSrc = currentAsset || "";
   const prevAudioSrcRef = useRef(audioSrc);
   const wasPlayingRef = useRef(false);
   const isAutoPlayNextRef = useRef(false);
 
   // ===== 音频播放控制 =====
-  const {
-    isPlaying,
-    currentTime,
-    duration,
-    audioRef,
-    togglePlay,
-    handleSeek,
-  } = useAudioPlayer({ src: audioSrc });
+  const { isPlaying, currentTime, duration, audioRef, togglePlay, handleSeek } = useAudioPlayer({
+    src: audioSrc,
+  });
 
   // 监听播放状态变化
   useEffect(() => {
@@ -134,10 +149,11 @@ export function useMusicPlayer({
   const effectiveCoverUrl = audioCoverUrl || workCover;
 
   // ===== 封面颜色提取 =====
-  const { dominantColor, secondaryColor, isLoaded: isColorLoaded } = useCoverColor(
-    effectiveCoverUrl,
-    { defaultDark: true }
-  );
+  const {
+    dominantColor,
+    secondaryColor,
+    isLoaded: isColorLoaded,
+  } = useCoverColor(effectiveCoverUrl, { defaultDark: true });
 
   // ===== 歌词管理 =====
   const {
@@ -294,7 +310,9 @@ export function useMusicPlayer({
 
     setLocalIsSearching(true);
     try {
-      const res = await fetch(`/api-netease/api/search/get?s=${encodeURIComponent(keyword)}&type=1`);
+      const res = await fetch(
+        `/api-netease/api/search/get?s=${encodeURIComponent(keyword)}&type=1`,
+      );
       const data = await res.json();
       setLocalSearchResults(data.result?.songs?.slice(0, 8) || []);
     } catch {
@@ -329,7 +347,7 @@ export function useMusicPlayer({
           const originalMap = parseLRCMap(data.lrc.lyric);
           const transMap = parseLRCMap(data.tlyric?.lyric || "");
           const allTimes = Array.from(new Set([...originalMap.keys(), ...transMap.keys()])).sort(
-            (a, b) => a - b
+            (a, b) => a - b,
           );
 
           const parsedLyrics = allTimes
@@ -350,7 +368,7 @@ export function useMusicPlayer({
         setLoadingSongId(null);
       }
     },
-    [setLyrics, loadingSongId]
+    [setLyrics, loadingSongId],
   );
 
   // 切换字体大小
