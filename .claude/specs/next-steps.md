@@ -2,60 +2,34 @@
 
 工作 backlog，按优先级粗排。每项独立可做，互不阻塞。
 
-## 1. 后端实体对齐 `@torchive/shared`（推荐先做）
+## 状态
 
-**Why**：当前后端 TypeORM `@Entity()` 类是独立源，与 `packages/shared/` 里的 plain interface 形状可能漂移。shared 包"只为前端服务"违反单一来源原则。
-
-**做法**：
-- 把 `apps/api/src/{domain,category,work,detail,user,user-favorite,user-history,user-watch-later}/entities/*.entity.ts` 的每个类加上 `implements SharedXxx`（如 `DomainEntity implements Domain`）
-- 形状不一致的字段：要么改 shared（推荐），要么改 entity（不推荐）
-- 字段命名差异（如 `workCount` vs `work_count`）：TypeORM 通常用 snake_case 列名，TS 属性名可以保持 camelCase，**属性名对齐 shared** 即可
-- 跑 `pnpm build` 验证
-
-**风险**：
-- 实体里可能用了一些 shared interface 没表达的字段（如 `password` 在 shared 是可选，后端是必填）。可以用 `Omit<SharedXxx, ...> & { extra: ...}` 解决。
-- 后端 lint 配的 `recommendedTypeChecked` 会更严格地暴露 `any` —— 修 lint 与此同步进行收益最大。
-
-**依赖**：`packages/shared/` 已就绪。
+- ✅ **Batch 1**（2026-06-25）：实体对齐 shared / 后端 lint / 拆 mappers / WorkDetail 6 模板重构 → `next-steps-batch-1.md`
+- ✅ **Batch 2**（2026-07-21）：URL 状态协议收尾（DomainOverviewView 全 path、IndexRedirect 老链接翻译、Music/Manga 写回 URL）→ `next-steps-batch-2.md`
 
 ---
 
-## 2. 修后端 lint（与 #1 同步做最划算）
+## 1. 后端实体对齐 `@torchive/shared` — ✅ 已完成
 
-**Why**：当前 `apps/api/eslint.config.mjs` 使用 `tseslint.configs.recommendedTypeChecked`，触发 25 errors：
-- `no-unsafe-member-access` / `no-unsafe-assignment` / `no-unsafe-call`（rows 是 `any`）
-- `no-unused-vars`（task.module.ts 多个 import）
-- `restrict-template-expressions`（user.controller.ts:76, user.service.ts:309）
-- 2 处 `'_' is assigned but never used`
-
-**做法**：
-- `apps/api/src/domain/{category,domain}.service.ts`：把 `rows: any[]` 改成实体类型或具体 shape
-- `apps/api/src/task/task.module.ts`：删 unused imports
-- `apps/api/src/user/user.controller.ts:76` 和 `user.service.ts:309`：用 `String(...)` 或类型 guard
-- `apps/api/src/user/user.service.ts:230, 239`：删 `_` 占位
-- `apps/api/src/main.ts:44`：补 `void` 或 `.catch()`
-
-**验证**：`pnpm --filter @torchive/api lint` 0 errors。
+> 详见 `next-steps-batch-1.md` 第 1 节。8 个 TypeORM 实体全部加 `implements SharedXxx`，`packages/shared` 放宽 `create_time` 为 `string | Date`。
 
 ---
 
-## 3. WorkDetail 模板重构（option B）
+## 2. 修后端 lint — ✅ 已完成
 
-**Context**：在 monorepo 之前的设计讨论里，用户希望"提高可读性、可扩展性"。`src/views/Web/WorkDetail/templates/` 下 6 个模板文件（`Video/Music/Manga/Ebook/Album/Mixture`）每个有重复的 layout 与 data-fetching 逻辑。
-
-**建议方向**：抽一个 `WorkDetailTemplate` 通用壳，模板只声明差异部分（封面渲染 / 播放控件 / 分章导航 / 媒体列表）。
-
-**预估工作量**：中。先读 `apps/web/src/views/Web/WorkDetail/templates/` 摸清当前 shape。
+> 详见 `next-steps-batch-1.md` 第 2 节。25 errors 全部修完，`pnpm --filter @torchive/api lint` 0 errors。
 
 ---
 
-## 4. `src/mappers/work.ts` 拆分（option D）
+## 3. WorkDetail 模板重构 — ✅ 已完成
 
-**Context**：原前端 `src/mappers/work.ts` 在拆分讨论时发现包含 `generateCoverUrl`、`mapWorkToBrief`、`parseEntitiesJson`、`transformEntities` 等多组函数，文件较大。
+> 详见 `next-steps-batch-1.md` 第 4 节。6 个模板共用 `WorkDetailShell` + `PosterCover` + `TabsPanel` + `FileListPanel`，总行数 -53%。
 
-**建议方向**：拆成 `mappers/work/cover.ts`、`mappers/work/brief.ts`、`mappers/work/entities.ts`（或类似粒度）。`apps/web/src/mappers/index.ts` 聚合。
+---
 
-**预估工作量**：小。先看 `apps/web/src/mappers/work.ts` 的函数分布。
+## 4. `src/mappers/work.ts` 拆分 — ✅ 已完成
+
+> 详见 `next-steps-batch-1.md` 第 3 节。`mappers/work/{cover,brief,entities,constants}.ts`，20 个消费方零改动。
 
 ---
 
@@ -97,27 +71,51 @@
 
 ---
 
-## 7. 测试基础设施
+## 7. 测试基础设施 — 🟡 部分完成
 
-**当前状态**：无 test 脚本，无 jest/vitest 框架。
+**当前状态**：
+- ✅ 前端 `vitest` 已装，4 个测试文件 / 21 tests passing（`mappers/work/{cover,brief,entities}` + `utils/shortHash`）
+- ✅ 后端 `jest` 已有 8 个 spec / 25 tests passing（覆盖 8 个 service/controller）
+- ⏳ 还没有 hook 级测试（`useMusicPlayState` / `useMangaPlayState` 等），需要 `jsdom` + `@testing-library/react`
+- ⏳ 还没有 e2e / 集成测试
 
-**建议**：
-- 前端装 `vitest` + `@testing-library/react`（与 Vite 集成好）
-- 后端已有 `jest`（在 devDependencies）但无 spec 文件
-- 优先写：API 层（`apps/web/src/api/`）的纯函数 mappers + 后端 service 的纯逻辑
+**剩余建议**：
+- 补 hook 测试（`jsdom` + `@testing-library/react`）覆盖 URL 状态协议
+- mapper 的 edge case（`generateCoverUrl` 缺 `is_orphan` / `cover` 等）
+- 后端集成测试（目前 spec 都是单 service，跨 service / 跨 module 没覆盖）
 
-**预估工作量**：高，是持续投入。
+**预估工作量**：持续投入。
 
 ---
 
-## 8. CI / pre-commit
+## 8. CI / pre-commit — 🟡 部分完成
 
-**Why**：目前没有自动化检查，全靠手动跑 `pnpm lint && pnpm build`。
+**当前状态**：
+- ✅ husky + lint-staged 已装（`pnpm install` 自动 `prepare`）
+- ✅ pre-commit hook 跑 `eslint --fix --max-warnings 0` + `prettier --write` on staged `.ts/.tsx`
+- ⏳ GitHub Actions 未配（项目无 remote 时可暂缓）
 
-**建议**：
-- 装 `husky` + `lint-staged`
-- `pre-commit`: 对 staged .ts/.tsx 跑 `eslint --fix` + `prettier --write`
-- （可选）GitHub Actions：跑 `pnpm install && pnpm lint && pnpm build`
+**剩余建议**：
+- 配 `.github/workflows/ci.yml`：跑 `pnpm install && pnpm lint && pnpm build && pnpm test`
+- 需要 push remote 之后才能 enable
+
+---
+
+## 9. Ebook / Album / Mixture 双向 URL 状态 — 📌 增量
+
+**Context**：Batch 2 给 Video / Music / Manga 上了写回 URL 能力。Ebook / Album / Mixture 三个模板在 `b31bb5b` 只接了只读 `initialFilePath`，**点击翻页/切章节/切媒体不会写回 URL**。
+
+**预估**：
+- **Ebook**：形态最接近 Manga（章节+页码），可参考 `useMangaPlayState` 做 `useEbookPlayState`。注意 Ebook 的"页"概念可能是 pdf/txt 章节内的字符位置 / pdf 页码 / epub chapterIndex，三者统一层很麻烦 —— 先想清楚是按文件级还是内容级
+- **Album**：章节列表 → 图片列表，"翻页"在章节内的图片，URL 可以 `?chapter=<key>&image=<n>`（类似 Manga 但 image 而非 page）
+- **Mixture**：混图/视频/pdf/音频，每章节可能是不同 media type。URL 状态比 Manga/Album 更复杂，可能需要 per-asset 分桶（`?asset=<hash>` + 额外 metadata）
+
+**做法**：
+- 先做 Ebook（形态最清晰）
+- 再 Album（用 Manga 的模板）
+- 最后 Mixture（单独设计，因为是异质 media 混排）
+
+**依赖**：无，等做完可以再写一个 batch-3 spec。
 
 ---
 
@@ -126,4 +124,5 @@
 - 改 `packages/shared/`：必跑 `pnpm --filter @torchive/web build` 验证消费方
 - 改 `apps/api/`：必跑 `pnpm --filter @torchive/api build`
 - 改 `apps/web/`：必跑 `pnpm --filter @torchive/web exec tsc -b && pnpm --filter @torchive/web lint && pnpm --filter @torchive/web build`
-- 一次性全验：`pnpm lint && pnpm build`（注意后端 lint 当前有 pre-existing errors，见 monorepo-setup.md）
+- 一次性全验：`pnpm lint && pnpm build`（后端 lint 已修；pre-commit hook 也会跑 eslint + prettier）
+- 跑测试：`pnpm test`（web vitest 21 + api jest 25）
