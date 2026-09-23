@@ -2,6 +2,27 @@
 
 媒体资源管理与播放平台 — 单仓多包（pnpm workspace）。
 
+<table>
+  <tr>
+    <td align="center"><b>视频</b></td>
+    <td align="center"><b>音乐</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/视频.png" alt="视频" /></td>
+    <td><img src="docs/screenshots/音乐.png" alt="音乐" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>漫画</b></td>
+    <td align="center"><b>小说</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/漫画.png" alt="漫画" /></td>
+    <td><img src="docs/screenshots/小说.png" alt="小说" /></td>
+  </tr>
+</table>
+
+
+
 ## 仓库结构
 
 ```
@@ -11,11 +32,9 @@ torchive/
 │   └── api/         # NestJS 11 + TypeORM + better-sqlite3 后端
 ├── packages/
 │   └── shared/      # 前后端共享的 TypeScript 类型（@torchive/shared）
-├── docs/            # 设计文档（DESIGN.md / kimi-code.md 在 apps/web/docs）
-├── .claude/
-│   ├── settings.json
-│   └── specs/       # 后续工作的 spec 与 plan
-├── package.json
+├── docs/
+│   ├── DESIGN.md            # 设计令牌
+│   └── screenshots/         # README 用截图
 ├── pnpm-workspace.yaml
 └── CLAUDE.md
 ```
