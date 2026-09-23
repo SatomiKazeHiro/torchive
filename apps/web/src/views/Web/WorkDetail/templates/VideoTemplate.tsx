@@ -85,7 +85,7 @@ export default function VideoTemplate({ work, domain, category, domainName }: Wo
       <TabsPanel
         tabs={tabs}
         renderTabContent={(tab) => (
-          <VideoGrid files={tab.files} allFiles={tab.allFiles} onPlay={handlePlay} />
+          <VideoGrid files={tab.files} allFiles={tab.allFiles} coverUrl={cover} onPlay={handlePlay} />
         )}
       />
     </WorkDetailShell>
@@ -95,10 +95,12 @@ export default function VideoTemplate({ work, domain, category, domainName }: Wo
 function VideoGrid({
   files,
   allFiles,
+  coverUrl,
   onPlay,
 }: {
   files: string[];
   allFiles: string[];
+  coverUrl: string;
   onPlay: (file: string) => void;
 }) {
   const [page, setPage] = useState(1);
@@ -122,7 +124,7 @@ function VideoGrid({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {pageFiles.map((file, idx) => {
           const episodeNum = start + idx + 1;
-          const coverFile = findVideoCover(file, allFiles);
+          const coverFile = findVideoCover(file, allFiles) || coverUrl;
           const fileName = file.split("/").pop() || file;
           return (
             <div

@@ -258,6 +258,16 @@ export default function ArtPlayerVideo({
       playerRef.current.on("pause", () => {
         callbacksRef.current.onPlaying?.(false);
       });
+
+      // 监听进度条跳转：artplayer-plugin-danmuku@5.3.0 不响应 seek，
+      // 这里手动调用 reset() 收回所有在飞弹幕，rAF 下一帧 readys 会按新 currentTime 重新发弹
+      playerRef.current.on("seek", () => {
+        const danmukuPlugin = playerRef.current?.plugins
+          ?.artplayerPluginDanmuku as { reset?: () => void } | undefined;
+        if (danmukuPlugin && typeof danmukuPlugin.reset === "function") {
+          danmukuPlugin.reset();
+        }
+      });
     };
 
     initPlayer();
