@@ -55,3 +55,7 @@ coverage/
 # Local tooling indexes
 .codegraph/
 .husky/_
+
+# Local agent / IDE tool configs (per-developer, not source of truth)
+.claude/
+.mcp.json
