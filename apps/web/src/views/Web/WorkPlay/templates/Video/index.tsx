@@ -3,7 +3,7 @@ import { BiFolder } from "react-icons/bi";
 
 import { transformEntities } from "@/mappers/work";
 import { getFileName } from "@/utils/fileHelper";
-import { Button } from "@/components";
+import { Button, Empty } from "@/components";
 import ArtPlayerVideo from "./ArtPlayerVideo";
 import VideoEpisodeList from "./VideoEpisodeList";
 import { generateVideoTabs } from "./videoTabs";
@@ -127,13 +127,17 @@ export default function VideoPlayTemplate({
   if (error || !work) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white py-12 text-center shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-          <BiFolder className="mx-auto mb-4 h-12 w-12 text-zinc-200 dark:text-zinc-800" />
-          <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">{error || "作品不存在"}</p>
+        <Empty
+          bordered
+          size="lg"
+          className="w-full max-w-sm shadow-2xs"
+          icon={<BiFolder className="h-6 w-6" />}
+          description={error || "作品不存在"}
+        >
           <Button variant="primary" onClick={onRetry}>
             重试
           </Button>
-        </div>
+        </Empty>
       </div>
     );
   }
@@ -142,10 +146,13 @@ export default function VideoPlayTemplate({
   if (!currentVideo) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white py-12 text-center shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-          <BiFolder className="mx-auto mb-4 h-12 w-12 text-zinc-200 dark:text-zinc-800" />
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无视频内容</p>
-        </div>
+        <Empty
+          bordered
+          size="lg"
+          className="w-full max-w-sm shadow-2xs"
+          icon={<BiFolder className="h-6 w-6" />}
+          description="暂无视频内容"
+        />
       </div>
     );
   }
@@ -154,22 +161,15 @@ export default function VideoPlayTemplate({
     <div className="flex h-full gap-3 bg-white p-3 dark:bg-zinc-950">
       {/* 左侧：视频播放器 */}
       <div className="relative flex-1 overflow-hidden rounded-lg border border-zinc-200 shadow-2xs dark:border-zinc-800">
-        {currentVideo ? (
-          <ArtPlayerVideo
-            src={currentVideo}
-            fileName={getFileName(currentVideo)}
-            allFiles={allFiles}
-            hasNext={hasNextVideo}
-            onReplay={handleReplay}
-            onPlayNext={handleNextEpisode}
-            onPlaying={setIsPlaying}
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-4 bg-zinc-50 dark:bg-zinc-950">
-            <BiFolder className="h-16 w-16 text-zinc-200 dark:text-zinc-800" />
-            <p className="text-zinc-400">请选择要播放的视频</p>
-          </div>
-        )}
+        <ArtPlayerVideo
+          src={currentVideo}
+          fileName={getFileName(currentVideo)}
+          allFiles={allFiles}
+          hasNext={hasNextVideo}
+          onReplay={handleReplay}
+          onPlayNext={handleNextEpisode}
+          onPlaying={setIsPlaying}
+        />
       </div>
 
       {/* 右侧：作品信息 + Tabs选集 + 更多推荐 */}

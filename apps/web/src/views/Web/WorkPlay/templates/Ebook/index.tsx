@@ -6,6 +6,7 @@ import { BiFile } from "react-icons/bi";
 import PdfReader from "@/features/common/PdfReader";
 import { TxtReader } from "@/features/common/TxtReader";
 import { MobileTxtReader } from "@/features/common/MobileTxtReader";
+import { Empty } from "@/components";
 import SettingsPanel from "./components/SettingsPanel";
 import { DEFAULT_READER_SETTINGS } from "./constants";
 import {
@@ -366,15 +367,21 @@ export default function EbookPlayTemplate({
 
   if (error || !work || !currentChapter) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 text-zinc-500">
-        <div className="text-6xl">📖</div>
-        <p>{error || "暂无内容"}</p>
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 rounded-lg bg-zinc-100 px-4 py-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+      <div className="flex h-full items-center justify-center p-6">
+        <Empty
+          bordered
+          size="lg"
+          className="w-full max-w-sm"
+          icon={<span className="text-5xl">📖</span>}
+          description={error || "暂无内容"}
         >
-          返回
-        </button>
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 rounded-lg bg-zinc-100 px-4 py-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          >
+            返回
+          </button>
+        </Empty>
       </div>
     );
   }

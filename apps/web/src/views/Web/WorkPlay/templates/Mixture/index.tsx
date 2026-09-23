@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { mapWorkToBrief } from "@/mappers/work";
-import { Card, Button, Breadcrumb, Poster, Empty } from "@/components";
+import { Button, Breadcrumb, Poster, Empty } from "@/components";
 import { buildBreadcrumbItems } from "@/views/Web/utils/breadcrumb";
 import { navigateToWorkDetailByWork } from "@/utils/navigation";
 import {
@@ -89,13 +89,17 @@ export default function MixturePlayTemplate({
   if (error || !work) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <Card className="w-full max-w-sm py-12 text-center" bordered={false} shadow="sm">
-          <BiFile className="mx-auto mb-4 h-12 w-12 text-zinc-200 dark:text-zinc-800" />
-          <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">{error || "作品不存在"}</p>
+        <Empty
+          bordered
+          size="lg"
+          className="w-full max-w-sm shadow-2xs"
+          icon={<BiFile className="h-6 w-6" />}
+          description={error || "作品不存在"}
+        >
           <Button variant="primary" onClick={onRetry}>
             重试
           </Button>
-        </Card>
+        </Empty>
       </div>
     );
   }

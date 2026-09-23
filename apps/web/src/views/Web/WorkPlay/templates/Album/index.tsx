@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { BiHeart, BiSolidHeart, BiBookmark, BiSolidBookmark, BiFolder, BiImage, BiChevronLeft, BiChevronRight } from "react-icons/bi";
 import FavoriteAction from "@/features/user-library/FavoriteAction";
 import WatchLaterAction from "@/features/user-library/WatchLaterAction";
-import { Breadcrumb, Tooltip } from "@/components";
+import { Breadcrumb, Button, Empty, Tooltip } from "@/components";
 import { buildBreadcrumbItems } from "@/views/Web/utils/breadcrumb";
 import { cn } from "@/components/utils/common";
 import { sortFiles } from "@/utils/sort";
@@ -293,16 +293,17 @@ export default function AlbumPlayTemplate({
   if (error || !work) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white py-12 text-center shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-          <BiImage className="mx-auto mb-4 h-12 w-12 text-zinc-200 dark:text-zinc-800" />
-          <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">{error || "作品不存在"}</p>
-          <button
-            onClick={onRetry}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
+        <Empty
+          bordered
+          size="lg"
+          className="w-full max-w-sm shadow-2xs"
+          icon={<BiImage className="h-6 w-6" />}
+          description={error || "作品不存在"}
+        >
+          <Button variant="primary" onClick={onRetry}>
             重试
-          </button>
-        </div>
+          </Button>
+        </Empty>
       </div>
     );
   }
@@ -311,10 +312,13 @@ export default function AlbumPlayTemplate({
   if (imageList.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="text-center">
-          <BiFolder className="mx-auto mb-4 h-16 w-16 text-zinc-200 dark:text-zinc-800" />
-          <p className="text-zinc-400">暂无图片</p>
-        </div>
+        <Empty
+          bordered
+          size="lg"
+          className="w-full max-w-sm shadow-2xs"
+          icon={<BiFolder className="h-6 w-6" />}
+          description="暂无图片"
+        />
       </div>
     );
   }

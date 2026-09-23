@@ -16,7 +16,7 @@ import {
   BiDisc,
   BiCloud,
 } from "react-icons/bi";
-import { Button, Card } from "@/components";
+import { Button, Empty } from "@/components";
 import { cn } from "@/components/utils/common";
 import { formatTime } from "@/utils/format";
 import { getBaseName } from "@/utils/fileHelper";
@@ -126,13 +126,19 @@ export default function MusicPlayTemplate({
   if (error || !transformedWorkData || playlist.length === 0) {
     return (
       <div className="flex h-full items-center justify-center bg-zinc-950 p-6">
-        <Card className="w-full max-w-sm py-12 text-center" bordered={false} shadow="sm">
-          <BiListUl className="mx-auto mb-4 h-12 w-12 text-zinc-800" />
-          <p className="mb-6 text-sm text-zinc-500">{error || "暂无音频内容"}</p>
+        <Empty
+          bordered
+          size="lg"
+          className="w-full max-w-sm"
+          icon={<BiListUl className="h-6 w-6" />}
+          description={
+            <span className="text-zinc-400">{error || "暂无音频内容"}</span>
+          }
+        >
           <Button variant="primary" onClick={onRetry}>
             重试
           </Button>
-        </Card>
+        </Empty>
       </div>
     );
   }

@@ -6,6 +6,7 @@ import { BiImages, BiImage } from "react-icons/bi";
 import { cn } from "@/components/utils/common";
 import toPrevCursor from "@/assets/svg-icons/to-prev_x32.svg";
 import toNextCursor from "@/assets/svg-icons/to-next_x32.svg";
+import { Empty } from "@/components";
 import { LazyImage, SettingsPanel, Toolbar } from "./components";
 import { generateChapterUnits } from "./utils";
 import { useMangaPlayState } from "./useMangaPlayState";
@@ -451,15 +452,20 @@ export default function MangaPlayTemplate({
   // ============ 渲染错误状态 ============
   if (error || !work || !currentChapter) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 bg-zinc-950 text-zinc-400">
-        <div className="text-6xl">📖</div>
-        <p>{error || "暂无内容"}</p>
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+      <div className="flex h-full items-center justify-center bg-zinc-950 p-6">
+        <Empty
+          size="lg"
+          iconVariant="flat"
+          icon={<span className="text-5xl">📖</span>}
+          description={<span className="text-zinc-400">{error || "暂无内容"}</span>}
         >
-          返回
-        </button>
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+          >
+            返回
+          </button>
+        </Empty>
       </div>
     );
   }
